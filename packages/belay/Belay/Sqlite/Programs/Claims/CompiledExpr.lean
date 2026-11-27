@@ -37,9 +37,4 @@ theorem CompiledExpr.run_compile (args : List Value) (e : Resolved.Expr) (row : 
       (width := 0) (by decide) e (by simpa [Resolved.Expr.readsBelow] using closed)).1.symm
   · rfl
 
-/-- Whether this condition is a constant that never passes WHERE, including SQL NULL. -/
-def CompiledExpr.rejectsAll : CompiledExpr → Bool
-  | .constant result => !Resolved.truthy result.1
-  | .perRow _ => false
-
 end Belay.Sqlite

@@ -1,33 +1,48 @@
 import Belay.Sqlite.Programs.Claims.ExprOrder
 import Belay.Sqlite.Programs.Claims.CompiledExpr
 import Belay.Sqlite.Model.Queries.Evaluation.CorrelatedSubqueryRun
+import Belay.Sqlite.Model.Queries.Evaluation.ComparisonTruthRules
 
 set_option doc.verso true
 
 namespace Belay.Sqlite.CompiledScript
 open Model Resolved
 
-/-- Test a clause with the bindings of this SELECT. -/
-private def keeps (args : List Value) (row : List Value) (e : Resolved.Expr) : Bool :=
-  Resolved.truthy (e.eval (.bound args) row)
+/-- A WHERE test keeps its sign and the bindings of its statement when scans compose. -/
+structure FilterAtom where
+  /-- Resolved test before SQL truth conversion. -/
+  expression : Resolved.Expr
+  /-- Complement row acceptance for a preceding DELETE. -/
+  complemented : Bool
+  /-- Parameters of the statement that supplied the test. -/
+  args : List Value
+  deriving DecidableEq
+
+local instance : Ord Resolved.Expr := ⟨exprOrder⟩
+local instance : Ord Value := instOrdValue
+deriving instance Ord for FilterAtom
+
+/-- Whether this signed test accepts the row. The complement applies after SQL truth conversion. -/
+def FilterAtom.accepts (a : FilterAtom) (outer : List Value) (row : List Value) : Bool :=
+  Resolved.truthy (a.expression.eval (.bound (a.args ++ outer)) row) != a.complemented
 
 /-- No clauses accepts everything. The outer none rejects everything. -/
-abbrev Filter := Option (List Resolved.Expr)
+abbrev Filter := Option (List FilterAtom)
 
 /-- Test all clauses of a compiled WHERE. -/
-def Filter.accepts (f : Filter) (args : List Value) (row : List Value) := f.any (·.all (keeps args row))
+def Filter.accepts (f : Filter) (outer : List Value) (row : List Value) := f.any (·.all (·.accepts outer row))
 
 /-- Scan only when the filter can accept a row. -/
-def Filter.rows (f : Filter) (args : List Value) (source : Unit → List (List Value)) : List (List Value) :=
+def Filter.rows (f : Filter) (source : Unit → List (List Value)) : List (List Value) :=
   match f with
   | none => []
   | some [] => source ()
-  | some atoms => (source ()).filter fun row => atoms.all (keeps args row)
+  | some atoms => (source ()).filter fun row => atoms.all (·.accepts [] row)
 
 /-- Filtering by the canonical clauses gives precisely their accepted rows.
 Proof sketch: split on the empty, rejecting and nonempty cases. -/
-theorem Filter.rows_eq (f : Filter) (args : List Value) (xs : List (List Value)) :
-    f.rows args (fun _ => xs) = xs.filter (f.accepts args) := by
+theorem Filter.rows_eq (f : Filter) (xs : List (List Value)) :
+    f.rows (fun _ => xs) = xs.filter (f.accepts []) := by
   cases f with
   | none => simp [rows, accepts]
   | some atoms =>
@@ -37,16 +52,16 @@ theorem Filter.rows_eq (f : Filter) (args : List Value) (xs : List (List Value))
 
 /-- Insert a clause in structural order, keeping one copy. Structural recursion keeps the
 normalizer reducible in the kernel, including when a caller proves a plan equality by reflexivity. -/
-private def insertAtom (a : Resolved.Expr) : List Resolved.Expr → List Resolved.Expr
+private def insertAtom (a : FilterAtom) : List FilterAtom → List FilterAtom
   | [] => [a]
   | b :: bs =>
     if a = b then b :: bs
-    else if (exprOrder a b).isLE then a :: b :: bs else b :: insertAtom a bs
+    else if (compare a b).isLE then a :: b :: bs else b :: insertAtom a bs
 
 /-- Insertion adds one Boolean requirement. Proof sketch: duplicate requirements are
 idempotent and the order of the remaining requirements does not affect conjunction. -/
-private theorem all_insert (a : Resolved.Expr) (args : List Value) (r : List Value) (xs : List Resolved.Expr) :
-    (insertAtom a xs).all (keeps args r) = (keeps args r a && xs.all (keeps args r)) := by
+private theorem all_insert (a : FilterAtom) (outer : List Value) (r : List Value) (xs : List FilterAtom) :
+    (insertAtom a xs).all (·.accepts outer r) = (a.accepts outer r && xs.all (·.accepts outer r)) := by
   induction xs with
   | nil => rfl
   | cons b bs ih =>
@@ -64,8 +79,8 @@ def Filter.both (a b : Filter) : Filter := do
 
 /-- Combining filters computes the conjunction of their acceptance tests.
 Proof sketch: insert the clauses in turn and apply the insertion law. -/
-theorem Filter.accepts_both (a b : Filter) (args : List Value) (r : List Value) :
-    (both a b).accepts args r = (a.accepts args r && b.accepts args r) := by
+theorem Filter.accepts_both (a b : Filter) (outer : List Value) (r : List Value) :
+    (both a b).accepts outer r = (a.accepts outer r && b.accepts outer r) := by
   cases a with
   | none => rfl
   | some xs =>
@@ -78,15 +93,15 @@ theorem Filter.accepts_both (a b : Filter) (args : List Value) (r : List Value) 
       | cons x xs ih => simp only [List.foldr_cons, all_insert, ih, List.all_cons, Bool.and_assoc]
 
 /-- Fold closed expressions with the model evaluator and retain row-dependent tests. -/
-def Filter.atom (args : List Value) (e : Resolved.Expr) : Filter :=
+def Filter.atom (args : List Value) (e : Resolved.Expr) (neg : Bool) : Filter :=
   match CompiledExpr.compile args e with
-  | .constant result => if Resolved.truthy result.1 then some [] else none
-  | .perRow _ => some [e]
+  | .constant result => if Resolved.truthy result.1 != neg then some [] else none
+  | .perRow _ => some [⟨e, neg, []⟩]
 
-/-- For every binding, expression and row, the filter from {name}`Filter.atom` accepts the row
-exactly when the bound expression is truthy. Proof sketch: apply {name}`CompiledExpr.run_compile`. -/
-theorem Filter.accepts_atom (args : List Value) (e : Resolved.Expr) (r : List Value) :
-    (atom args e).accepts args r = Resolved.truthy (e.eval (.bound args) r) := by
+/-- For every binding, expression and row, a compiled atom accepts exactly when SQL
+truth differs from the complement flag. Proof sketch: apply {name}`CompiledExpr.run_compile`. -/
+theorem Filter.accepts_atom (args : List Value) (e : Resolved.Expr) (neg : Bool) (r : List Value) :
+    (atom args e neg).accepts args r = (Resolved.truthy (e.eval (.bound args) r) != neg) := by
   have h := congrArg (fun result => Resolved.truthy result.1) (CompiledExpr.run_compile args e r)
   cases hp : CompiledExpr.compile args e with
   | constant v =>
@@ -95,19 +110,45 @@ theorem Filter.accepts_atom (args : List Value) (e : Resolved.Expr) (r : List Va
     change Resolved.truthy v.1 = Resolved.truthy (e.eval (.bound args) r) at h
     simp [atom, hp, ← h, accepts]
     split <;> simp_all
-  | perRow run => simp [atom, hp, accepts, keeps]
+  | perRow run => simp [atom, hp, accepts, FilterAtom.accepts]
 
-/-- Flatten conjunctions, fold constant clauses, and keep one copy of each remaining test. -/
-def Filter.expr (args : List Value) : Resolved.Expr → Filter
-  | .and a b => (expr args a).both (expr args b)
-  | e => atom args e
+/-- Lower AND to filter conjunction and IS NOT to the complement of IS. A negated
+conjunction stays a single test because complementing all its clauses would change its meaning. -/
+def Filter.expr (args : List Value) (neg : Bool) : Resolved.Expr → Filter
+  | .and a b => if neg then atom args (.and a b) true else (expr args false a).both (expr args false b)
+  | .compare .isNot aff a b coll => atom args (.compare .is aff a b coll) (!neg)
+  | e => atom args e neg
 
-/-- For every row and binding, the compiled clauses accept the row exactly when the SQL
-expression passes WHERE. Proof sketch: SQL truth distributes over AND after conversion
-to a row acceptance test. Apply this law at each conjunction. -/
-theorem Filter.accepts_expr (args : List Value) (e : Resolved.Expr) (row : List Value) :
-    (expr args e).accepts args row = Resolved.truthy (e.eval (.bound args) row) := by
-  fun_induction expr args e <;> simp_all [accepts_atom, accepts_both, Resolved.Expr.eval_and,
-    Resolved.truthy_and]
+/-- Predicate normalization preserves SQL truth on every row. Proof sketch: apply the
+SQL AND and IS NOT truth laws and expression correctness for the remaining atoms. -/
+theorem Filter.accepts_expr (args : List Value) (r : List Value) (neg : Bool) (e : Resolved.Expr) :
+    (expr args neg e).accepts args r = (Resolved.truthy (e.eval (.bound args) r) != neg) := by
+  fun_induction expr args neg e <;> simp_all [accepts_atom, accepts_both, Resolved.Expr.eval_and,
+    Resolved.truthy_and, Resolved.Expr.eval_compare, Resolved.truthy_isNot]
+  all_goals cases neg <;> simp_all
+
+/-- Attach this statement's bindings after duplicate clauses have been removed. This
+lets equal parameter slots normalize even when the supplied values are variables. -/
+private def bindFilter (args : List Value) (f : Filter) : Filter :=
+  f.map (List.map fun a => { a with args := a.args ++ args })
+
+/-- Binding a normalized filter preserves its row test. Proof sketch: move the
+statement's arguments into each clause and evaluate it on the same row. -/
+private theorem accepts_bind (args : List Value) (f : Filter) (r : List Value) :
+    (bindFilter args f).accepts [] r = f.accepts args r := by
+  cases f <;> simp [bindFilter, Filter.accepts, List.all_map, Function.comp_def, FilterAtom.accepts]
+
+/-- An absent WHERE selects every row. Its complement selects none. -/
+def Filter.whereClause (args : List Value) (neg : Bool) : Option Resolved.Expr → Filter
+  | none => if neg then none else some []
+  | some e => bindFilter args (expr args neg e)
+
+/-- Compile a WHERE test, optionally complemented after SQL truth conversion.
+Proof sketch: handle the absent WHERE and use expression normalization for a supplied predicate. -/
+theorem Filter.accepts_where (args : List Value) (neg : Bool) (p : Option Resolved.Expr) (row : List Value) :
+    (whereClause args neg p).accepts [] row = (Resolved.conditionKeeps p (.bound args) row != neg) := by
+  cases p with
+  | none => cases neg <;> rfl
+  | some e => exact (accepts_bind ..).trans (accepts_expr args row neg e)
 
 end Belay.Sqlite.CompiledScript

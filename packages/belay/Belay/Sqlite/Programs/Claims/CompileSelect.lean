@@ -2,12 +2,13 @@ import Belay.Sqlite.Programs.Claims.LastOutput
 import Belay.Sqlite.Programs.Claims.ReadStepRule
 import Belay.Sqlite.Schema.Dispatch.SelectCatalogExecution
 import Belay.Sqlite.Model.Programs.StatementRunLaws.SelectCalmRule
-import Belay.Sqlite.Programs.Claims.CompiledFilter
+import Belay.Sqlite.Programs.Claims.CompiledDelete
 
 set_option doc.verso true
 
 namespace Belay.Sqlite
 open Model hiding Database
+open CompiledScript
 
 /-- The profile of an unordered SELECT that succeeds with a given bag of rows.
 The actual output is the normalized bag, and it is the sole permitted output. -/
@@ -27,108 +28,54 @@ theorem LastOutputPlan.rowBag_eq_iff (xs ys : List (List Value)) :
   · intro perm
     simp only [rowBag, (Resolved.normalForm_eq_iff_perm xs ys).mpr perm]
 
-/-- Compile a WHERE to a restriction on the input rows. A constant false or NULL condition
-rejects all rows immediately. An absent condition accepts the full scan. -/
-private def compileWhere (args : List Value) : Option Resolved.Expr → (Unit → List (List Value)) → List (List Value)
-  | none => fun source => source ()
-  | some e => (CompiledScript.Filter.expr args e).rows args
+/-- Compile the table, its selection and its projection separately so preceding writes
+can fuse their restrictions with the SELECT before the scan runs. -/
+private def selectPlan (pos : Nat) (q : Resolved.Query) (args : List Value) : Plan :=
+  ⟨pos, Filter.whereClause args false q.filter, .project q.columns args⟩
 
-/-- Compile each projection before visiting rows. Scalar expressions reuse their bound
-values, and aggregate outputs retain the model's single-row interpretation. -/
-private def compileColumn (args : List Value) : Resolved.Output → List Value → Value
-  | .scalar e => let plan := CompiledExpr.compile args e; fun row => (plan.run row).1
-  | .aggregate a => fun row => a.eval (.bound args) [row]
-
-/-- The compiled WHERE selects exactly the model's filtered rows on every input.
-Proof sketch: {name}`CompiledScript.Filter.rows_eq` reduces a scan to row acceptance,
-and {name}`CompiledScript.Filter.accepts_expr` identifies acceptance with SQL truth. -/
-private theorem compileWhere_eq (args : List Value) (q : Resolved.Query) (xs : List (List Value)) :
-    compileWhere args q.filter (fun _ => xs) = Resolved.filtered (.bound args) q xs := by
-  unfold Resolved.filtered
-  cases h : q.filter with
-  | none => exact (List.filter_eq_self.mpr (fun _ _ => rfl)).symm
-  | some e =>
-    simp only [compileWhere, CompiledScript.Filter.rows_eq, Option.all_some]
-    exact List.filter_congr fun row _ => CompiledScript.Filter.accepts_expr args e row
-
-/-- The last-output plan for a plain SELECT. Compile the WHERE and projection expressions
-with their bindings before reading the database. The result records every duplicate. -/
-def LastOutputPlan.scan (pos : Nat) (q : Resolved.Query) (args : List Value) : LastOutputPlan :=
-  let restrict := compileWhere args q.filter
-  let columns := q.columns.map (compileColumn args)
-  fun db _ => rowBag ((restrict (fun _ => db.scanAt pos)).map fun row => columns.map (fun f => f row))
-
-/-- A closed WHERE that evaluates to false or NULL gives an empty result on every database.
-Proof sketch: inspect the compiled condition. Only a rejecting constant meets the premise. -/
-theorem LastOutputPlan.scan_eq_empty (pos : Nat) (q : Resolved.Query) (args : List Value)
-    (rejects : q.filter.any (fun e => (CompiledExpr.compile args e).rejectsAll)) (db : Database) (env : Env) :
-    scan pos q args db env = rowBag [] := by
-  have empty : Resolved.filtered (.bound args) q (db.scanAt pos) = [] := by
-    apply List.filter_eq_nil_iff.mpr
-    intro r _
-    cases h : q.filter with
-    | none => simp [h] at rejects
-    | some e =>
-      cases plan : CompiledExpr.compile args e with
-      | perRow f => simp [h, plan, CompiledExpr.rejectsAll] at rejects
-      | constant v =>
-        have eq := CompiledExpr.run_compile args e r
-        rw [plan] at eq
-        change v = _ at eq
-        simp [h, plan, CompiledExpr.rejectsAll] at rejects
-        simp [Resolved.Expr.eval, ← eq, rejects]
-  simp only [scan, compileWhere_eq, empty, List.map_nil]
-
-/-- On every input the compiled scan gives the normalized bag of the model's projected
-rows. Proof sketch: rewrite the filter and each compiled scalar with their evaluation laws. -/
-private theorem scan_eq (pos : Nat) (q : Resolved.Query) (args : List Value) (db : Database) (env : Env) :
-    LastOutputPlan.scan pos q args db env = LastOutputPlan.rowBag
-      ((Resolved.filtered (.bound args) q (db.scanAt pos)).map (q.rowOutput (.bound args))) := by
-  unfold LastOutputPlan.scan
-  simp only [compileWhere_eq, List.map_map]
-  congr 1
+/-- The plan produces the model's projected bag. Proof sketch: use the filter acceptance
+law and the correctness of each compiled scalar. -/
+private theorem selectPlan_eq (pos : Nat) (q : Resolved.Query) (args : List Value) (src : Sources) :
+    (selectPlan pos q args).run src = .rows (Resolved.normalForm
+      ((Resolved.filtered (.bound args) q (src pos)).map (q.rowOutput (.bound args)))) := by
+  simp only [selectPlan, Plan.run, ScanOutput.run, Filter.rows_eq, List.map_map]
+  have accepts : (Filter.whereClause args false q.filter).accepts [] = Resolved.conditionKeeps q.filter (.bound args) := by
+    funext r
+    simp [Filter.accepts_where]
+  rw [accepts]
+  congr 2
   apply List.map_congr_left
   intro row _
   apply List.map_congr_left
   intro col _
   cases col <;> simp [compileColumn, CompiledExpr.run_compile, Resolved.Expr.eval]
 
-/-- A calm singleton SELECT whose resolution is a plain scan with a known table has
-exactly the scan plan's last output on every admitted start. Proof sketch: transport
-resolution across the common catalog, apply the unordered SELECT rule, then lift the
-step's rows to every branch of the singleton send. -/
-private theorem scan_correct {catalog : Database} {stmt : Syntax.Statement} {args : List Value}
+/-- A simple, calm SELECT returns the plan output from every matching context. Proof sketch:
+resolve on the shared catalog, apply the unordered execution rule, and transport the filter
+and projection through the input scan permutation. -/
+private theorem selectStep {catalog : Database} {stmt : Syntax.Statement} {args : List Value}
     {q : Resolved.Query} {pos : Nat} {shape : CatalogTable} {after : ResolveState}
     (select : stmt.asQuery?.isSome = true)
     (resolved : resolveStatement runContext (catalog.raw.connection {}).resolveState stmt = .ok (.query q [], after))
     (simple : q = Resolved.Query.simple [.first pos] q.filter q.columns q.names)
     (calm : (Resolved.Statement.query q []).Calm) (located : catalog.raw.catalog.tableAt pos = some shape) :
-    (LastOutputPlan.scan pos q args).Correct ⟨[(stmt, args)]⟩ catalog := by
-  intro db schema env _
-  let start := ExecutionContext.initial db env
-  obtain ⟨present, scanned⟩ := Database.table_of_catalog schema located
+    Checked (selectPlan pos q args) ⟨[(stmt, args)]⟩ catalog := by
+  intro start src input
+  obtain ⟨present, original⟩ := input.table located
   let ctx := Resolved.EvalContext.bound args
-  let rows := (Resolved.filtered ctx q (db.scanAt pos)).map (q.rowOutput ctx)
+  have perm := (original.filter (fun r => q.filter.all (fun e => Resolved.truthy (e.eval ctx r)))).map (q.rowOutput ctx)
   have output : (runScriptStep runContext start.clock start.index start.connection stmt args).output =
-      .rows (Resolved.normalForm rows) := by
-    have same := select_resolution_of_same_catalog runContext stmt select start.connection.resolveState
-      (catalog.raw.connection {}).resolveState schema
-    rw [resolved] at same
-    cases h : resolveStatement runContext start.connection.resolveState stmt with
-    | error e => simp [h, Except.map] at same
-    | ok pair =>
-      rcases pair with ⟨st, next⟩
-      simp [h, Except.map] at same
-      subst st
-      obtain ⟨filter, columns, names, rfl⟩ :
-          ∃ f cs ns, q = Resolved.Query.simple [.first pos] f cs ns := ⟨_, _, _, simple⟩
-      rw [runScriptStep_output_of_resolved h, resolvedStepOutput_calm_unordered _ _ _ _ calm
-        rfl rfl rfl rfl rfl rfl (Resolved.Query.source_first _ _ _ _ _ rfl present)
-        (by intro impossible; cases impossible) (by simp [Resolved.Query.fails, Resolved.Query.simple]) rfl,
-        Resolved.Query.results_plain_unordered _ rfl rfl rfl rfl rfl rfl]
-      simp only [rows, ctx, scanned]
-  rw [scan_eq]
-  apply Script.lastOutputProfile_of_check
+      (selectPlan pos q args).run src := by
+    rw [← input.names] at resolved
+    rw [runScriptStep_output_of_resolved resolved]
+    obtain ⟨filter, columns, names, rfl⟩ :
+        ∃ f cs ns, q = Resolved.Query.simple [.first pos] f cs ns := ⟨_, _, _, simple⟩
+    rw [resolvedStepOutput_calm_unordered _ _ _ _ calm rfl rfl rfl rfl rfl rfl
+      (Resolved.Query.source_first _ _ _ _ _ rfl present) (by intro impossible; cases impossible)
+      (by simp [Resolved.Query.fails, Resolved.Query.simple]) rfl,
+      Resolved.Query.results_plain_unordered _ rfl rfl rfl rfl rfl rfl]
+    rw [selectPlan_eq]
+    exact congrArg Output.rows ((Resolved.normalForm_eq_iff_perm _ _).mpr perm)
   obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, form⟩ := Syntax.Statement.select_of_asQuery select
   apply Sql.check_send_select form
   · cases step : runScriptStep runContext start.clock start.index start.connection stmt args with
@@ -137,28 +84,70 @@ private theorem scan_correct {catalog : Database} {stmt : Syntax.Statement} {arg
   · intro selected choice
     rw [output] at choice
     obtain rfl | impossible := choice
-    · rfl
+    · simp [ExecutionContext.next]
     · exact impossible.elim
 
-/-- Compile a singleton, calm, unordered SELECT over one table with its bound values. On
-success return the plan with a proof of {name}`LastOutputPlan.Correct`. For example, a
-single-table projection with a column comparison in WHERE can compile. Unsupported scripts
-and failed resolutions return no plan. -/
-def Script.compileLastOutput? (s : Script) (catalog : Database) :
-    Option { p : LastOutputPlan // p.Correct s catalog } :=
-  match s with
-  | ⟨[(stmt, args)]⟩ => do
-    match resolved : resolveStatement runContext (catalog.raw.connection {}).resolveState stmt with
-    | .ok (.query q [], _) =>
-      let [.first pos] := q.sources | none
+/-- Resolve each statement on the catalog. Compose a plain DELETE with the remaining plan,
+or return its affected-row count when it is the final statement. -/
+private def compileSteps? (catalog : Database) : (stmts : List (Syntax.Statement × List Value)) →
+    Option { p : Plan // Checked p ⟨stmts⟩ catalog }
+  | [] => none
+  | (stmt, args) :: rest => do
+    match h : resolveStatement runContext (catalog.raw.connection {}).resolveState stmt with
+    | .ok (.delete pos filter [] [] none, _) =>
       match located : catalog.raw.catalog.tableAt pos with
       | some _ =>
-        if ready : stmt.asQuery?.isSome = true ∧
-            q = Resolved.Query.simple [.first pos] q.filter q.columns q.names ∧ (Resolved.Statement.query q []).Calm then
-          return ⟨LastOutputPlan.scan pos q args, scan_correct ready.1 resolved ready.2.1 ready.2.2 located⟩
+        if calm : (Resolved.Statement.delete pos filter [] [] none).Calm then
+          have step {s src} (i : Inputs catalog s src) := deleteStep args h located calm i
+          match tailEq : rest with
+          | [] => return ⟨⟨pos, Filter.whereClause args false filter, .count⟩,
+              by
+                subst rest
+                intro s src input
+                apply Sql.check_mono (step input)
+                intro _ _ result
+                simpa only [Plan.run, ScanOutput.run, Filter.rows_eq, selectedBy] using result.1⟩
+          | second :: tail =>
+            let next ← compileSteps? catalog rest
+            return ⟨next.val.prependDelete pos filter args, by
+              subst rest
+              intro s src input
+              apply (check_send_append ⟨[(stmt, args)]⟩ ⟨second :: tail⟩ _ s).2
+              rw [Plan.run_prependDelete]
+              exact Sql.check_mono (step input) (fun _ _ result => next.property _ _ result.2)⟩
         else none
       | none => none
+    | .ok (.query q [], _) =>
+      if tailEq : rest = [] then
+        let [.first pos] := q.sources | none
+        match located : catalog.raw.catalog.tableAt pos with
+        | some _ =>
+          if ready : stmt.asQuery?.isSome = true ∧
+              q = Resolved.Query.simple [.first pos] q.filter q.columns q.names ∧ (Resolved.Statement.query q []).Calm then
+            return ⟨selectPlan pos q args, by subst rest; exact selectStep ready.1 h ready.2.1 ready.2.2 located⟩
+          else none
+        | none => none
+      else none
     | _ => none
-  | _ => none
+
+/-- The certified scan data for a script. This form supports structural plan comparisons. -/
+def Script.compileScan? (s : Script) (catalog : Database) : Option {p : Plan // Checked p s catalog} := do
+  let plan ← compileSteps? catalog s.statements
+  return ⟨plan.val.pruneEmpty, fun state src input => by
+    simpa only [Plan.run_pruneEmpty] using plan.property state src input⟩
+
+/-- Equal scan data give equal last outputs. Proof sketch: the compiler certificates give
+the two outputs, then the data equality identifies their evaluations. -/
+theorem CompiledScript.same_of_eq {p q : Plan} {a b : Script} {catalog : Database}
+    (left : Checked p a catalog) (right : Checked q b catalog) (same : p = q) : a.SameLastOn b catalog := by
+  subst q
+  exact (LastOutputPlan.sameLastOn_iff (correct left) (correct right)).mpr (fun _ _ _ _ => rfl)
+
+/-- Compile a sequence of plain DELETEs with an optional final single-table SELECT,
+or one SELECT. Each plan carries its last-output certificate for the supplied catalog. -/
+def Script.compileLastOutput? (s : Script) (catalog : Database) :
+    Option { p : LastOutputPlan // p.Correct s catalog } := do
+  let plan ← s.compileScan? catalog
+  return ⟨asLast plan.val, correct plan.property⟩
 
 end Belay.Sqlite

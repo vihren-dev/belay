@@ -142,28 +142,25 @@ the goal and the messages stay as they were, and the step rule of the read appli
 Leave the equality open when the compiled plans need another law. -/
 private def compareLastOutputs (left right catalog : Expr) : TacticM Unit := do
   let certificate (script : Expr) (side : String) := do
-    let plan ← mkAppM ``Script.compileLastOutput? #[script, catalog]
+    let plan ← mkAppM ``Script.compileScan? #[script, catalog]
     unless (← whnf plan).isAppOf ``Option.some do
       throwError "sql_run: unsupported query on the {side} of ~"
     let compiled ← mkAppM ``Option.get #[plan, ← mkEqRefl (mkConst ``Bool.true)]
     mkAppM ``Subtype.property #[compiled]
-  let same ← mkAppM ``LastOutputPlan.sameLastOn_iff #[← certificate left "left", ← certificate right "right"]
+  let lhs ← certificate left "left"
+  let rhs ← certificate right "right"
+  let saved ← Tactic.saveState
+  liftMetaTactic fun goal => do goal.apply (← mkAppM ``CompiledScript.same_of_eq #[lhs, rhs])
+  let target ← instantiateMVars (← getMainTarget)
+  let compare ← if target.hasFVar then `(tactic| with_unfolding_all rfl) else `(tactic| decide +kernel)
+  let equal ← tryCatchRuntimeEx (do withoutRecover (evalTactic compare); pure true) fun error =>
+    if error.isRuntime && !error.isMaxRecDepth then throw error else pure false
+  if equal then return
+  saved.restore
+  let same ← mkAppM ``LastOutputPlan.sameLastOn_iff
+    #[← mkAppM ``CompiledScript.correct #[lhs], ← mkAppM ``CompiledScript.correct #[rhs]]
   liftMetaTactic fun goal => do goal.apply (← mkAppM ``Iff.mpr #[same])
-  evalTactic (← `(tactic|
-    (intro db schema env complete
-     first
-     | solve
-       | apply Eq.trans (LastOutputPlan.scan_eq_empty _ _ _ (by decide +kernel) db env)
-         exact (LastOutputPlan.scan_eq_empty _ _ _ (by decide +kernel) db env).symm
-     | with_reducible rfl
-     | skip)))
-  unless (← getGoals).isEmpty do
-    -- Reflexivity can unfold the compiler to compare normalized clauses. On different
-    -- plans it can reach the recursion limit while unfolding the database evaluator.
-    let saved ← Tactic.saveState
-    tryCatchRuntimeEx (withoutRecover (evalTactic (← `(tactic| rfl)))) fun error => do
-      if error.isRuntime && !error.isMaxRecDepth then throw error
-      saved.restore
+  evalTactic (← `(tactic| intro db schema env complete))
 
 /-- Compare the compiled plans of a last-output equivalence, or apply the step rules to the check
 of a SQL program. Leave any open obligations for the caller. The optional terms are hints: each is tried against each premise about the context, for

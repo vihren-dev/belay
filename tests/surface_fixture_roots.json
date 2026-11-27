@@ -73,7 +73,7 @@
     "SchemaSuccessChecks", "SignupInvariantClaims", "SqlFileProbe"
   ],
   "surfaceSelect": [
-    "RowFilterCases", "CompiledSelectCases",
+    "RowFilterCases", "CompiledSelectCases", "CompiledDeleteCases",
     "FunctionCallSafetyCases", "DeleteCoverageCases", "DeleteReadComparison", "DeleteLastOutput",
     "CatalogOutputCases", "ReplacedSubqueryEquivalence", "QuerySendClaims", "S6CheckLabels",
     "SelectAutoCases", "SelectAutomationCore", "SelectAutomationExecution", "SelectAutomationSchema",
