@@ -23,7 +23,7 @@ partial def runGoal (hints : Hints) (first : Bool) (fuel : Nat) (goal : MVarId) 
   let goal ← enterCheck goal
   let some program ← checkProgram? (← goal.getType)
     | if first then
-        throwError "sql_run proves a check of a SQL program, a triple, or the goal that mvcgen leaves for one. This goal is none of these. Use another tactic, or state the claim with Sql.check."
+        throwError "sql_run accepts a last-output equivalence (left ~ right on catalog), a SQL program check, a triple, or the goal that mvcgen leaves for one. This goal is none of these. Use another tactic, or state the claim with Sql.check."
       else return [goal]
   let apply (tactic : TSyntax `tactic) : TacticM (List MVarId) := do
     setGoals [goal]

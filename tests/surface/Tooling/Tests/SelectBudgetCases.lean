@@ -48,7 +48,7 @@ def failsAndRestores (limit : Option Nat) (tactic : TSyntax `tactic) : TacticM U
 
 /-- info: sql_auto did not close the goal. The routes failed:
 - sql_commute: sql_commute proves only a claim of Migration.PreservesAt or Migration.CommutesOn. Use another tactic for this goal.
-- sql_run: sql_run proves a check of a SQL program, a triple, or the goal that mvcgen leaves for one. This goal is none of these. Use another tactic, or state the claim with Sql.check.
+- sql_run: sql_run accepts a last-output equivalence (left ~ right on catalog), a SQL program check, a triple, or the goal that mvcgen leaves for one. This goal is none of these. Use another tactic, or state the claim with Sql.check.
 - sql_select: it used the work limit of its share.
 - grind: `grind` failed
 Run one of these tactics alone to see the goals that it leaves. -/
