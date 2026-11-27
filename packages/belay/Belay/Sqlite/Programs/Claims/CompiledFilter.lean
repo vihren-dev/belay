@@ -1,7 +1,5 @@
 import Belay.Sqlite.Programs.Claims.ExprOrder
 import Belay.Sqlite.Programs.Claims.CompiledExpr
-import Belay.Sqlite.Model.Queries.Evaluation.CorrelatedSubqueryRun
-import Belay.Sqlite.Model.Queries.Evaluation.ComparisonTruthRules
 
 set_option doc.verso true
 

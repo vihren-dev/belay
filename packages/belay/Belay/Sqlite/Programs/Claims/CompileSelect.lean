@@ -1,7 +1,6 @@
 import Belay.Sqlite.Programs.Claims.LastOutput
 import Belay.Sqlite.Programs.Claims.ReadStepRule
 import Belay.Sqlite.Schema.Dispatch.SelectCatalogExecution
-import Belay.Sqlite.Model.Programs.StatementRunLaws.SelectCalmRule
 import Belay.Sqlite.Programs.Claims.CompiledDelete
 
 set_option doc.verso true

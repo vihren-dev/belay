@@ -1,7 +1,4 @@
 import Belay.Sqlite.Programs.Claims.CompiledScript
-import Belay.Sqlite.Model.Programs.Scripts.PlainDeleteCoverage
-import Belay.Sqlite.Model.Programs.Scripts.StatementCalm
-import Belay.Sqlite.Model.Schema.Columns.TwoStateKeptRows
 
 set_option doc.verso true
 

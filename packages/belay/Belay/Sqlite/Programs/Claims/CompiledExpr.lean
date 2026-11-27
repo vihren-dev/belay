@@ -1,5 +1,4 @@
-import Belay.Sqlite.Model.Queries.Evaluation.ExprAppendLaws
-import Belay.Sqlite.Model.Queries.Evaluation.SelectCalmRule
+import Belay.Sqlite.Model
 
 set_option doc.verso true
 
