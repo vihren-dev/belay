@@ -7,6 +7,7 @@ import Belay.Sqlite.Programs.StatementRunLaws.DerivedColumnQueries
 import Belay.Sqlite.Programs.StatementRunLaws.DerivedColumnSuccessCheck
 import Belay.Sqlite.Programs.Scripts.ContextObservationBridge
 import Belay.Sqlite.Programs.Claims.LastOutput
+import Belay.Sqlite.Programs.Claims.CompileSelect
 import Belay.Sqlite.Programs.Claims.FreshFromNotation
 import Belay.Sqlite.Programs.StatementRunLaws.PlainWriteFrames
 import Belay.Sqlite.Programs.Claims.SendStatementsInvariant

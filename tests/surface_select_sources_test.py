@@ -123,3 +123,9 @@ def test_row_filter_algebra(runtime_root: Path, tmp_path: Path) -> None:
     """Check the four row-filter relations on empty, singleton, concatenated and duplicate
     inputs and on SQL NULL. Audit all proofs, including the singleton truth tables."""
     check_module_chain(runtime_root, tmp_path, (("RowFilterCases", 5),), timeout=30)
+
+
+def test_compiled_select_profiles(runtime_root: Path, tmp_path: Path) -> None:
+    """Compile singleton reads on the same starting database, compare their residual bags,
+    retain populated bindings and duplicates, and decline unsupported SQL shapes."""
+    check_module_chain(runtime_root, tmp_path, (("CompiledSelectCases", 3),), timeout=60)
