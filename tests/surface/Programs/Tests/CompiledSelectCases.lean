@@ -21,10 +21,7 @@ private def whereTrue (value : Value) : Script := sql r"SELECT ?1 FROM items WHE
 For every binding, the two SQL spellings return one copy per qualifying row on any matching database.
 Proof sketch: compile each script independently. The remaining bag equality drops an always-true filter. -/
 theorem equivalent (value : Value) : byId value ~ whereTrue value on items := by
-  apply (LastOutputPlan.sameLastOn_iff
-    (((byId value).compileLastOutput? items).get (by rfl)).property
-    (((whereTrue value).compileLastOutput? items).get (by rfl)).property).mpr
-  intro db _ env _
+  sql_run
   apply (LastOutputPlan.rowBag_eq_iff _ _).mpr
   apply List.Perm.map
   apply List.Perm.of_eq
@@ -53,12 +50,27 @@ theorem unsupported :
 Proof sketch: each compiled condition rejects every row. -/
 theorem constant_filters :
     (sql r"SELECT 1 FROM items WHERE FALSE") ~ (sql r"SELECT 1 FROM items WHERE 1 = 2") on items := by
-  apply (LastOutputPlan.sameLastOn_iff
-    ((Script.compileLastOutput? _ _).get (by rfl)).property
-    ((Script.compileLastOutput? _ _).get (by rfl)).property).mpr
-  intro db _ env _
-  apply Eq.trans (LastOutputPlan.scan_eq_empty _ _ _ (by decide +kernel) db env)
-  exact (LastOutputPlan.scan_eq_empty _ _ _ (by decide +kernel) db env).symm
+  sql_run
+
+/-- The compiled plans coincide for any binding. Proof sketch: use reflexivity on the plans. -/
+theorem identical (value : Value) : byId value ~ byId value on items := by sql_run
+
+/-- Different closed filters leave a plan equality. The false premise lets the fixture
+inspect that goal even though these scripts differ on a nonempty table.
+Proof sketch: run the tactic, check the residual goal shape, then use the premise. -/
+example (impossible : False) :
+    (sql r"SELECT 1 FROM items WHERE 1 = 1") ~ (sql r"SELECT 1 FROM items WHERE 1 = 2") on items := by
+  sql_run
+  change _ = _
+  exact impossible.elim
+
+/-- error: sql_run: unsupported query on the left of ~ -/
+#guard_msgs in
+example : (sql r"SELECT id FROM items ORDER BY id") ~ byId .null on items := by sql_run
+
+/-- error: sql_run: unsupported query on the right of ~ -/
+#guard_msgs in
+example : byId .null ~ (sql r"SELECT id FROM items ORDER BY id") on items := by sql_run
 
 /-- A sum of two columns compiles to SQL addition on arbitrary input values.
 Proof sketch: reduce the row function on a row containing the two operands. -/
@@ -83,6 +95,7 @@ theorem sum_output :
 #print axioms equivalent
 #print axioms bound_output
 #print axioms unsupported
+#print axioms identical
 #print axioms constant_filters
 #print axioms column_sum
 #print axioms constant_fault

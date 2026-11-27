@@ -1,5 +1,6 @@
 import Belay.Sqlite.Programs.Automation.SqlRunDelete
 import Belay.Sqlite.Programs.Automation.SqlSelect
+import Belay.Sqlite.Programs.Claims.CompileSelect
 
 set_option doc.verso true
 
@@ -137,8 +138,28 @@ the goal and the messages stay as they were, and the step rule of the read appli
           blocked := blocked || blockingPremises.contains tag
     return (← variables.filterM fun data => return !(← data.isAssigned)) ++ open_
 
-/-- Apply the step rules to the check of a SQL program, and leave the obligations that the rules do not
-discharge. The optional terms are hints: each is tried against each premise about the context, for
+/-- Compile both scripts on one catalog and compare their certified last outputs.
+Leave the equality open when the compiled plans need another law. -/
+private def compareLastOutputs (left right catalog : Expr) : TacticM Unit := do
+  let certificate (script : Expr) (side : String) := do
+    let plan ← mkAppM ``Script.compileLastOutput? #[script, catalog]
+    unless (← whnf plan).isAppOf ``Option.some do
+      throwError "sql_run: unsupported query on the {side} of ~"
+    let compiled ← mkAppM ``Option.get #[plan, ← mkEqRefl (mkConst ``Bool.true)]
+    mkAppM ``Subtype.property #[compiled]
+  let same ← mkAppM ``LastOutputPlan.sameLastOn_iff #[← certificate left "left", ← certificate right "right"]
+  liftMetaTactic fun goal => do goal.apply (← mkAppM ``Iff.mpr #[same])
+  evalTactic (← `(tactic|
+    (intro db schema env complete
+     first
+     | solve
+       | apply Eq.trans (LastOutputPlan.scan_eq_empty _ _ _ (by decide +kernel) db env)
+         exact (LastOutputPlan.scan_eq_empty _ _ _ (by decide +kernel) db env).symm
+     | with_reducible rfl
+     | skip)))
+
+/-- Compare the compiled plans of a last-output equivalence, or apply the step rules to the check
+of a SQL program. Leave any open obligations for the caller. The optional terms are hints: each is tried against each premise about the context, for
 example the resolution of a statement. For a plain DELETE on a fresh connection, a
 catalog hint supplies the resolution and target table. The tactic also tries the DELETE coverage rule. -/
 syntax (name := sqlRun) "sql_run" (" [" term,* "]")? : tactic
@@ -149,9 +170,12 @@ syntax (name := sqlRun) "sql_run" (" [" term,* "]")? : tactic
     | `(tactic| sql_run [$hints,*]) => hints.getElems
     | _ => #[]
   let goal ← getMainGoal
-  let siblings := (← getGoals).drop 1
-  let remaining ← runGoal hints true traversalFuel goal
-  let tidied ← remaining.mapM tidy
-  setGoals (tidied ++ siblings)
+  match_expr ← goal.getType with
+  | Script.SameLastOn left right catalog => goal.withContext <| focus <| compareLastOutputs left right catalog
+  | _ =>
+    let siblings := (← getGoals).drop 1
+    let remaining ← runGoal hints true traversalFuel goal
+    let tidied ← remaining.mapM tidy
+    setGoals (tidied ++ siblings)
 
 end Belay.Sqlite.Run
