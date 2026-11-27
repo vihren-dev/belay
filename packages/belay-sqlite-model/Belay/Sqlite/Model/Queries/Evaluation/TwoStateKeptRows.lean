@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Queries.Evaluation.CorrelatedSubqueryRun
 import Belay.Sqlite.Model.Queries.Evaluation.TwoStateNotExistsExcept
 import Belay.Sqlite.Model.Queries.Evaluation.PlainInsertRows
 
@@ -36,5 +37,18 @@ theorem Resolved.currentTerm_mem_results (position : Nat) (columns : List Resolv
     exact ⟨row, member, by simp [Function.comp_def]⟩
   · rintro ⟨row, member, rfl⟩
     exact ⟨row, member, by simp [Function.comp_def]⟩
+
+/-- For any two input row lists, if every row kept by the condition in the first list
+occurs in the second, each output of {name}`Resolved.initialTerm` occurs in the results
+of {name}`Resolved.currentTerm` with the same columns and evaluation context.
+Proof sketch: use the same input row as the witness for both projections. -/
+theorem Resolved.project_selected_subset {before after : List (List Value)} {pos : Nat}
+    {condition : Resolved.Expr} {columns : List Resolved.Expr} {names : List String} {ctx : Resolved.EvalContext}
+    (survive : before.filter (conditionKeeps (some condition) ctx) ⊆ after) :
+    (initialTerm pos condition columns names).results ctx before ⊆
+      (currentTerm pos columns names).results ctx after := by
+  intro output member
+  obtain ⟨cells, scanned, kept, rfl⟩ := (initialTerm_mem_results ..).mp member
+  exact (currentTerm_mem_results ..).mpr ⟨cells, survive (List.mem_filter.mpr ⟨scanned, kept⟩), rfl⟩
 
 end Belay.Sqlite.Model

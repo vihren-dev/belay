@@ -19,7 +19,8 @@ observation resolves the claim against the catalog of the start and the reached 
 change ({name}`PurgeFrameSite.claimResolves`); {name}`resolvedStepOutput_notExistsExcept_hasRows` reduces the rows to
 two facts about the tables. A row with a condition that is not 1 is not selected by the filter, whatever the values
 are ({name}`Resolved.Expr.truthy_isNot_one_and`), so the delete keeps it
-({name}`Resolved.notExistsExcept_subset`); and the first cell of a row is its rowid, which no other row shares, so the
+({name}`Resolved.selected_subset_deleted_iff`) and its projection occurs after the purge
+({name}`Resolved.project_selected_subset`). The first cell of a row is its rowid, which no other row shares, so the
 rows of the first term are identical where they compare equal ({name}`Resolved.notExistsExcept_identical`). -/
 theorem purge_keeps_rows {db : Database} {c now : Value} (site : PurgeFrameSite db c now)
     (deleteContext : Resolved.EvalContext) (parameters : deleteContext.parameters = [c, now]) :
@@ -43,13 +44,13 @@ theorem purge_keeps_rows {db : Database} {c now : Value} (site : PurgeFrameSite 
     ⟨site.table, (LiteralData.deleted deleteContext ⟨site.table, db.raw.rows.getD site.position []⟩ (some purgeFilter)).rows⟩
     (purgeKeepsCompound_shape site.names) purgeKeepsCondition_rowwise sessionColumns_rowwise present
     (Model.Database.table_setRows _ present aligned) ?_ ?_
-  · refine Resolved.notExistsExcept_subset site.position purgeKeepsCondition sessionColumns site.names _ purgeFilter
-      deleteContext _ ?_
-    intro row _ kept
-    have rowwise := purgeFilter_rowwise.evaluate_congr deleteContext (Resolved.EvalContext.bound [c, now]) row.values
+  · apply Resolved.project_selected_subset
+    apply Resolved.selected_subset_deleted_iff.mpr
+    intro cells _ kept
+    have rowwise := purgeFilter_rowwise.evaluate_congr deleteContext (Resolved.EvalContext.bound [c, now]) cells
       (by simp [parameters])
-    have not_selected := Resolved.Expr.truthy_isNot_one_and _ _ _ row.values kept
-    show Resolved.truthy ((purgeFilter.evaluate deleteContext row.values).1) = false
+    have not_selected := Resolved.Expr.truthy_isNot_one_and _ _ _ cells kept
+    show Resolved.truthy ((purgeFilter.evaluate deleteContext cells).1) = false
     rw [rowwise]
     exact not_selected
   · exact Resolved.notExistsExcept_identical site.position purgeKeepsCondition (.column 0) [.column 1, .column 2]
