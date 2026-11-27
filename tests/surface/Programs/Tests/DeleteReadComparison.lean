@@ -63,9 +63,20 @@ private theorem after_delete_rows (db : Database) (schema : db.HasCatalog shop)
   dsimp only
   unfold bigAt expected
   rw [Model.Database.rows_getD_setRows _ aligned]
-  apply List.Perm.map
-  simpa only [List.filter_filter, keeps_customer, Bool.and_comm, table, LiteralData.deleted] using
-    (Resolved.sourceRows_deleted table ctx nullFilter).filter Big
+  simpa only [table, LiteralData.deleted, keeps_customer] using
+    RowFilter.project_after_restrict (Resolved.sourceRows_deleted table ctx nullFilter) Big
+      (fun row => [cell 1 row, cell 2 row])
+
+/-- Check that the two projection laws compose with the DELETE scan law. For every table,
+context, DELETE filter, selection and projection, a plain DELETE preserves the selected
+bag exactly when the selected and deleted rows are disjoint on the original scan. -/
+theorem delete_preserves_projected_bag_iff (table : Table) (ctx : Resolved.EvalContext)
+    (filter : Option Resolved.Expr) (keep : List Value → Bool) (project : List Value → α) :
+    (((Resolved.sourceRows (LiteralData.deleted ctx table filter)).filter keep).map project).Perm
+      (((Resolved.sourceRows table).filter keep).map project) ↔
+      RowFilter.DisjointOn (Resolved.sourceRows table) keep (Resolved.conditionKeeps filter ctx) := by
+  have rewrite := RowFilter.project_after_restrict (Resolved.sourceRows_deleted table ctx filter) keep project
+  rw [rewrite.congr_left _, RowFilter.project_restrict_iff, RowFilter.disjointOn_iff_impliesOn_complement]
 
 /-- The DELETE preserves the catalog and leaves exactly the expected big orders. -/
 theorem delete_effect (db : Database) (env : Env) (schema : db.HasCatalog shop) :
@@ -91,6 +102,7 @@ theorem delete_then_select_eq_filtered_select (db : Database) (env : Env)
   | error _ => exact False.elim h
   | ok rows => exact List.Perm.trans h same
 
+#print axioms delete_preserves_projected_bag_iff
 #print axioms survives_delete_customer_seven
 #print axioms delete_then_select_eq_filtered_select
 

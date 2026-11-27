@@ -65,4 +65,34 @@ theorem disjointOn_iff_impliesOn_complement (rows : List α) (p q : α → Bool)
     DisjointOn rows p q ↔ ImpliesOn rows p (fun row => !q row) := by
   simp [DisjointOn, ImpliesOn]
 
+/-- For any two inputs, if the second contains exactly the rows of the first that pass a
+restriction, selecting and projecting from the second gives the same bag as selecting with
+both filters and projecting from the first. For example, the restriction can describe rows
+that survive a DELETE. Proof sketch: filtering and mapping preserve permutations, and
+successive filters select the conjunction of their predicates. -/
+theorem project_after_restrict {xs ys : List α} {survives : α → Bool}
+    (effect : ys.Perm (xs.filter survives)) (keep : α → Bool) (project : α → β) :
+    ((ys.filter keep).map project).Perm
+      ((xs.filter (fun row => survives row && keep row)).map project) := by
+  simpa only [List.filter_filter, Bool.and_comm] using (effect.filter keep).map project
+
+/-- A projection preserves the length of both lists, so a sublist with the same projected
+bag as the original list contains every entry. -/
+private theorem projected_sublist_perm_iff {xs ys : List α} (sub : ys.Sublist xs) (project : α → β) :
+    (ys.map project).Perm (xs.map project) ↔ ys = xs := by
+  refine ⟨fun same => sub.eq_of_length (by simpa using same.length_eq), ?_⟩
+  rintro rfl
+  exact List.Perm.refl _
+
+/-- For every input, two filters and a projection, adding the extra filter preserves the
+projected bag exactly when every selected input row passes that filter ({name}`ImpliesOn`).
+Even a constant projection records one entry per selected row. Proof sketch: filtering
+takes a sublist. Its projection has the original bag exactly when the sublist is the full
+selected list, which means every selected row passes the extra filter. -/
+theorem project_restrict_iff (xs : List α) (keep extra : α → Bool) (project : α → β) :
+    ((xs.filter (fun row => extra row && keep row)).map project).Perm ((xs.filter keep).map project) ↔
+      ImpliesOn xs keep extra := by
+  rw [← List.filter_filter, projected_sublist_perm_iff List.filter_sublist, List.filter_eq_self]
+  simp [ImpliesOn, List.mem_filter]
+
 end Belay.Sqlite.Model.RowFilter
