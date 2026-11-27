@@ -43,14 +43,15 @@ private def nullFilter : Option Resolved.Expr :=
 /-- An order survives the DELETE exactly when its customer cell is non-NULL. -/
 private theorem keeps_customer (ctx : Resolved.EvalContext) (row : List Value) :
     (!Resolved.conditionKeeps nullFilter ctx row) = !(cell 1 row).isNull := by
-  change (!Resolved.truthy (Comparison.is.apply
-    (Resolved.comparisonOperands (some .integer) (cell 1 row) .null).1
-    (Resolved.comparisonOperands (some .integer) (cell 1 row) .null).2 .binary)) = _
-  generalize cell 1 row = v
-  obtain ⟨first, second⟩ := Resolved.comparisonOperands_isNull (some .integer) v .null
-  have right : (Resolved.comparisonOperands (some .integer) v .null).2.isNull = true := by rw [second]; rfl
-  simp only [Comparison.apply, right, Bool.or_true, ite_true, first]
-  cases v.isNull <;> rfl
+  exact (Resolved.truthy_isNot ..).symm.trans (Resolved.truthy_isNot_null (some .integer) .binary (cell 1 row))
+
+/-- Check {name}`Resolved.truthy_isNot` on a non-NULL operand. For every order, including one
+with a NULL customer, {lit}`customer_id IS NOT 7` keeps it exactly when {lit}`customer_id IS 7`
+would spare it in a DELETE. -/
+theorem survives_delete_customer_seven (ctx : Resolved.EvalContext) (row : List Value) :
+    let condition := fun op => some (Resolved.Expr.compare op (some .integer) (.column 1) (.literal (.integer 7)) .binary)
+    Resolved.conditionKeeps (condition .isNot) ctx row = !Resolved.conditionKeeps (condition .is) ctx row := by
+  exact Resolved.truthy_isNot _ _ _
 
 /-- The surviving big orders equal the original big orders with non-NULL customer cells, up to order. -/
 private theorem after_delete_rows (db : Database) (schema : db.HasCatalog shop)
@@ -90,6 +91,7 @@ theorem delete_then_select_eq_filtered_select (db : Database) (env : Env)
   | error _ => exact False.elim h
   | ok rows => exact List.Perm.trans h same
 
+#print axioms survives_delete_customer_seven
 #print axioms delete_then_select_eq_filtered_select
 
 end DeleteReadComparison

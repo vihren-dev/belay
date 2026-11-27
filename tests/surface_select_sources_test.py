@@ -98,12 +98,13 @@ def test_context_cases(runtime_root: Path, tmp_path: Path) -> None:
     fixtures check cover_delete with the model laws scalarSucceeds and jsonSucceeds and the
     inProjection subquery rule. FunctionCallSafetyCases checks scalarSucceeds, jsonSucceeds and
     extractInputs_iff directly in the model. DeleteReadComparison proves that DELETE followed by SELECT
-    and the filtered SELECT succeed with equal row bags on every shop database. DeleteLastOutput compares
+    and the filtered SELECT succeed with equal row bags on every shop database. It also checks that
+    IS NOT 7 keeps the rows that DELETE WHERE customer_id IS 7 spares. DeleteLastOutput compares
     their last outputs and distinguishes an earlier SQL error from a final error. Every proof has only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectJoinSupport", 0),
                        ("SelectJoinCases", 3), ("SelectDerivedSupport", 3), ("SelectContextCases", 5),
                        ("SelectCounterContextCases", 1), ("FunctionCallSafetyCases", 8), ("DeleteCoverageCases", 14),
-                       ("DeleteReadComparison", 1), ("DeleteLastOutput", 1)),
+                       ("DeleteReadComparison", 2), ("DeleteLastOutput", 1)),
                        timeout=120)
 
 
