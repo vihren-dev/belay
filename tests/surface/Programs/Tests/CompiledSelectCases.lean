@@ -17,22 +17,27 @@ private def byId (value : Value) : Script := sql r"SELECT ?1 FROM items WHERE id
 /-- An extra conjunct accepts every qualifying row. -/
 private def whereTrue (value : Value) : Script := sql r"SELECT ?1 FROM items WHERE id AND 1" value
 
-/-- Check both SELECT compilation and the residual goal of {name}`LastOutputPlan.sameLastOn_iff`.
-For every binding, the two SQL spellings return one copy per qualifying row on any matching database.
-Proof sketch: compile each script independently. The remaining bag equality drops an always-true filter. -/
-theorem equivalent (value : Value) : byId value ~ whereTrue value on items := by
-  sql_run
-  apply (LastOutputPlan.rowBag_eq_iff _ _).mpr
-  apply List.Perm.map
-  apply List.Perm.of_eq
-  apply List.filter_congr
-  intro row _
-  let ctx := Resolved.EvalContext.bound [value]
-  let idColumn := Resolved.Expr.column 0
-  change Resolved.truthy (idColumn.eval ctx row) =
-    Resolved.truthy ((idColumn.and (.literal (.integer 1))).eval ctx row)
-  simp only [Resolved.Expr.eval_and, Resolved.truthy_and, Resolved.Expr.eval_literal,
-    show Resolved.truthy (.integer 1) = true from rfl, Bool.and_true]
+/-- For every projection binding, adding a true conjunct leaves the certified scan unchanged.
+Proof sketch: {lit}`sql_run` compares the two compiled outputs. -/
+theorem equivalent (value : Value) : byId value ~ whereTrue value on items := by sql_run
+
+/-- Reordering two different range tests and repeating one gives the same last output
+on every database with this catalog. Proof sketch: compare the normalized SELECT plans. -/
+theorem reordered_conjunction (lo hi : Value) :
+    (sql r"SELECT id FROM items WHERE (id > ?1 AND id < ?2) AND id > ?1" lo hi) ~
+    (sql r"SELECT id FROM items WHERE id < ?2 AND id > ?1" hi lo) on items := by sql_run
+
+/-- Two equality tests with different parameter slots must both pass. The first slot alone
+selects row one, the second selects row two, and their conjunction selects neither.
+Proof sketch: compute the compiled SQL outputs with distinct bindings. -/
+theorem distinct_bindings :
+    let run := fun (s : Script) => ((s.compileLastOutput? items).map fun p => (p.val items Env.newConnection).1)
+    let one := Value.integer 1
+    let two := Value.integer 2
+    run (sql r"SELECT id FROM items WHERE id = ?1" one) = some (some (.rows [[one]])) ∧
+    run (sql r"SELECT id FROM items WHERE id = ?1" two) = some (some (.rows [[two]])) ∧
+    run (sql r"SELECT id FROM items WHERE id = ?1 AND id = ?2" one two) = some (some (.rows [])) := by
+  decide +kernel
 
 /-- Check that the compiler preserves the bound operand and duplicate outputs on the
 two-row fixture. A missing or ignored binding would project NULL instead of seven. -/
@@ -92,6 +97,8 @@ theorem sum_output :
     (((script.compileLastOutput? input).get (by rfl)).val input Env.newConnection).1 =
       (LastOutputPlan.rowBag [[.integer 5], [.null]]).1 := by decide +kernel
 
+#print axioms reordered_conjunction
+#print axioms distinct_bindings
 #print axioms equivalent
 #print axioms bound_output
 #print axioms unsupported

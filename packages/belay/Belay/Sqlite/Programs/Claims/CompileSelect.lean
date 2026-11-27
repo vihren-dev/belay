@@ -2,7 +2,7 @@ import Belay.Sqlite.Programs.Claims.LastOutput
 import Belay.Sqlite.Programs.Claims.ReadStepRule
 import Belay.Sqlite.Schema.Dispatch.SelectCatalogExecution
 import Belay.Sqlite.Model.Programs.StatementRunLaws.SelectCalmRule
-import Belay.Sqlite.Programs.Claims.CompiledExpr
+import Belay.Sqlite.Programs.Claims.CompiledFilter
 
 set_option doc.verso true
 
@@ -31,9 +31,7 @@ theorem LastOutputPlan.rowBag_eq_iff (xs ys : List (List Value)) :
 rejects all rows immediately. An absent condition accepts the full scan. -/
 private def compileWhere (args : List Value) : Option Resolved.Expr → (Unit → List (List Value)) → List (List Value)
   | none => fun source => source ()
-  | some e => match CompiledExpr.compile args e with
-    | .constant result => if Resolved.truthy result.1 then (fun source => source ()) else fun _ => []
-    | .perRow f => fun source => (source ()).filter fun row => Resolved.truthy (f row).1
+  | some e => (CompiledScript.Filter.expr args e).rows args
 
 /-- Compile each projection before visiting rows. Scalar expressions reuse their bound
 values, and aggregate outputs retain the model's single-row interpretation. -/
@@ -42,24 +40,16 @@ private def compileColumn (args : List Value) : Resolved.Output → List Value �
   | .aggregate a => fun row => a.eval (.bound args) [row]
 
 /-- The compiled WHERE selects exactly the model's filtered rows on every input.
-Proof sketch: use expression correctness, then simplify filtering by a constant decision. -/
+Proof sketch: {name}`CompiledScript.Filter.rows_eq` reduces a scan to row acceptance,
+and {name}`CompiledScript.Filter.accepts_expr` identifies acceptance with SQL truth. -/
 private theorem compileWhere_eq (args : List Value) (q : Resolved.Query) (xs : List (List Value)) :
     compileWhere args q.filter (fun _ => xs) = Resolved.filtered (.bound args) q xs := by
   unfold Resolved.filtered
   cases h : q.filter with
   | none => exact (List.filter_eq_self.mpr (fun _ _ => rfl)).symm
   | some e =>
-    simp only [Option.all_some]
-    have same := List.filter_congr (l := xs) (fun r _ =>
-      congrArg (fun result => Resolved.truthy result.1) (CompiledExpr.run_compile args e r))
-    apply Eq.trans _ same
-    cases plan : CompiledExpr.compile args e with
-    | constant result =>
-      cases keep : Resolved.truthy result.1 <;> simp only [compileWhere, plan, CompiledExpr.run, keep,
-        Bool.false_eq_true, ite_false, ite_true]
-      · exact (List.filter_eq_nil_iff.mpr (fun _ _ => by decide)).symm
-      · exact (List.filter_eq_self.mpr (fun _ _ => rfl)).symm
-    | perRow f => simp [compileWhere, plan, CompiledExpr.run]
+    simp only [compileWhere, CompiledScript.Filter.rows_eq, Option.all_some]
+    exact List.filter_congr fun row _ => CompiledScript.Filter.accepts_expr args e row
 
 /-- The last-output plan for a plain SELECT. Compile the WHERE and projection expressions
 with their bindings before reading the database. The result records every duplicate. -/
@@ -73,14 +63,21 @@ Proof sketch: inspect the compiled condition. Only a rejecting constant meets th
 theorem LastOutputPlan.scan_eq_empty (pos : Nat) (q : Resolved.Query) (args : List Value)
     (rejects : q.filter.any (fun e => (CompiledExpr.compile args e).rejectsAll)) (db : Database) (env : Env) :
     scan pos q args db env = rowBag [] := by
-  cases h : q.filter with
-  | none => simp [h] at rejects
-  | some e =>
-    cases plan : CompiledExpr.compile args e with
-    | perRow f => simp [h, plan, CompiledExpr.rejectsAll] at rejects
-    | constant result =>
-      simp [h, plan, CompiledExpr.rejectsAll] at rejects
-      simp [scan, h, compileWhere, plan, rejects]
+  have empty : Resolved.filtered (.bound args) q (db.scanAt pos) = [] := by
+    apply List.filter_eq_nil_iff.mpr
+    intro r _
+    cases h : q.filter with
+    | none => simp [h] at rejects
+    | some e =>
+      cases plan : CompiledExpr.compile args e with
+      | perRow f => simp [h, plan, CompiledExpr.rejectsAll] at rejects
+      | constant v =>
+        have eq := CompiledExpr.run_compile args e r
+        rw [plan] at eq
+        change v = _ at eq
+        simp [h, plan, CompiledExpr.rejectsAll] at rejects
+        simp [Resolved.Expr.eval, ← eq, rejects]
+  simp only [scan, compileWhere_eq, empty, List.map_nil]
 
 /-- On every input the compiled scan gives the normalized bag of the model's projected
 rows. Proof sketch: rewrite the filter and each compiled scalar with their evaluation laws. -/

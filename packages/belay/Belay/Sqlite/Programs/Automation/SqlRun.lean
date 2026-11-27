@@ -157,6 +157,13 @@ private def compareLastOutputs (left right catalog : Expr) : TacticM Unit := do
          exact (LastOutputPlan.scan_eq_empty _ _ _ (by decide +kernel) db env).symm
      | with_reducible rfl
      | skip)))
+  unless (← getGoals).isEmpty do
+    -- Reflexivity can unfold the compiler to compare normalized clauses. On different
+    -- plans it can reach the recursion limit while unfolding the database evaluator.
+    let saved ← Tactic.saveState
+    tryCatchRuntimeEx (withoutRecover (evalTactic (← `(tactic| rfl)))) fun error => do
+      if error.isRuntime && !error.isMaxRecDepth then throw error
+      saved.restore
 
 /-- Compare the compiled plans of a last-output equivalence, or apply the step rules to the check
 of a SQL program. Leave any open obligations for the caller. The optional terms are hints: each is tried against each premise about the context, for
