@@ -4,6 +4,8 @@ set_option sql.check false
 
 set_option doc.verso true
 
+/-! Check last-output compilation, scan-plan equality and SQL automation for plain DELETEs. -/
+
 namespace CompiledDeleteCases
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database

@@ -181,7 +181,7 @@ open scoped Belay.Sqlite.LastOutput
 
 -- Delete orders with a NULL customer, then read the big orders.
 -- The reference SELECT filters for both conditions on the original database.
-#check (deleteScript; bigScript ~ referenceScript on shop)
+theorem delete_last : deleteScript; bigScript ~ referenceScript on shop := by sql_run
 ```
 
 Both sides start from the same database with the shop catalog and the same complete

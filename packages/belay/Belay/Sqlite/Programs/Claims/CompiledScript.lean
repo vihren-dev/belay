@@ -6,6 +6,9 @@ import Belay.Sqlite.Programs.Scripts.KindRuleSend
 
 set_option doc.verso true
 
+/-! Scan plans and their certificates let callers compare a sequence of writes and a final scan
+by the data that describes its last output. -/
+
 namespace Belay.Sqlite.CompiledScript
 open Model hiding Database
 
@@ -21,14 +24,16 @@ def scans (raw : Model.Database) (pos : Nat) : Rows :=
 
 /-- Relate the execution context to the inputs of a plan at a statement boundary. -/
 structure Inputs (catalog : Database) (s : ExecutionContext) (src : Sources) : Prop where
-  /-- Resolve the next statement with the catalog and settings used at compilation. -/
+  /-- The connection has the resolve state of a fresh connection on the compilation catalog. -/
   names : s.connection.resolveState = (catalog.raw.connection {}).resolveState
-  /-- Carry validity to the next write step. -/
+  /-- The connection state holds {name}`Model.Database.Valid` for the pinned profile. -/
   valid : s.connection.state.Holds (Model.Database.Valid Profile.pinned)
   /-- The plan reads each table as the same bag of rows as the model. -/
   agree : ∀ pos, (scans s.connection.state.database pos).Perm (src pos)
 
-/-- Locate a table in the actual connection and relate its scan to the plan's input.
+/-- For a context and scan sources related by {name}`Inputs`, if the catalog has the
+given table shape at a position, the connection has the table
+with that shape and its stored rows there. Its source rows are a permutation of the plan input at that position.
 Proof sketch: transfer the lookup along the catalog equality, then use the scan permutation. -/
 theorem Inputs.table {catalog : Database} {s src} (inputs : Inputs catalog s src) {pos shape}
     (located : catalog.raw.catalog.tableAt pos = some shape) :

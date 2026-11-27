@@ -119,7 +119,9 @@ def Filter.expr (args : List Value) (neg : Bool) : Resolved.Expr â†’ Filter
   | .compare .isNot aff a b coll => atom args (.compare .is aff a b coll) (!neg)
   | e => atom args e neg
 
-/-- Predicate normalization preserves SQL truth on every row. Proof sketch: apply the
+/-- For every binding, row, flag and expression, {name}`Filter.expr` accepts the row
+exactly when the bound expression is truthy and the flag is false, or the expression
+fails the truth test and the flag is true. Proof sketch: apply the
 SQL AND and IS NOT truth laws and expression correctness for the remaining atoms. -/
 theorem Filter.accepts_expr (args : List Value) (r : List Value) (neg : Bool) (e : Resolved.Expr) :
     (expr args neg e).accepts args r = (Resolved.truthy (e.eval (.bound args) r) != neg) := by
@@ -143,7 +145,8 @@ def Filter.whereClause (args : List Value) (neg : Bool) : Option Resolved.Expr â
   | none => if neg then none else some []
   | some e => bindFilter args (expr args neg e)
 
-/-- Compile a WHERE test, optionally complemented after SQL truth conversion.
+/-- For every binding, flag, optional predicate and row, {name}`Filter.whereClause` with
+empty outer bindings accepts the row exactly when {name}`Resolved.conditionKeeps` differs from the flag.
 Proof sketch: handle the absent WHERE and use expression normalization for a supplied predicate. -/
 theorem Filter.accepts_where (args : List Value) (neg : Bool) (p : Option Resolved.Expr) (row : List Value) :
     (whereClause args neg p).accepts [] row = (Resolved.conditionKeeps p (.bound args) row != neg) := by

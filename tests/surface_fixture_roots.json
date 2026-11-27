@@ -74,7 +74,7 @@
   ],
   "surfaceSelect": [
     "RowFilterCases", "CompiledSelectCases", "CompiledDeleteCases",
-    "FunctionCallSafetyCases", "DeleteCoverageCases", "DeleteReadComparison", "DeleteLastOutput",
+    "FunctionCallSafetyCases", "DeleteCoverageCases", "DeleteLastOutput",
     "CatalogOutputCases", "ReplacedSubqueryEquivalence", "QuerySendClaims", "S6CheckLabels",
     "SelectAutoCases", "SelectAutomationCore", "SelectAutomationExecution", "SelectAutomationSchema",
     "SelectAutomationSources", "SelectBudgetCases", "SelectCardinalityCases", "SelectCheckCases",

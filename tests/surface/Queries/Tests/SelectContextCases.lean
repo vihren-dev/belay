@@ -59,13 +59,6 @@ theorem delete_keeps_names (db : Database) (env : Env) (schema : db.HasCatalog s
       (ExecutionContext.initial db env) := by
   sql_run [schema]
 
-/-- From every fresh connection with the catalog of {name}`shop`, sending {name}`deleteScript`
-and then querying {name}`bigScript` returns the qualifying rows of the reached database.
-Proof sketch: resolve the DELETE using the catalog and apply {name}`big_at` at the reached context. -/
-theorem big_after_delete (db : Database) (env : Env) (schema : db.HasCatalog shop) :
-    (do let _ ← send deleteScript; query bigScript rfl).check ReadsBig (ExecutionContext.initial db env) := by
-  sql_run [schema, big_at]
-
 /-- A DELETE from the first table that reads the change counter. -/
 private def deleteCustomers := sql r"DELETE FROM customers WHERE changes() > 0"
 
@@ -91,6 +84,5 @@ example : (partial_.run (query bigScript rfl)).returnsResult
 #print axioms big_after
 #print axioms delete_with_counter
 #print axioms delete_keeps_names
-#print axioms big_after_delete
 
 end SelectContextCases

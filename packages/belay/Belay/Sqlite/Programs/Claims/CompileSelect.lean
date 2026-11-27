@@ -136,7 +136,8 @@ def Script.compileScan? (s : Script) (catalog : Database) : Option {p : Plan // 
   return ⟨plan.val.pruneEmpty, fun state src input => by
     simpa only [Plan.run_pruneEmpty] using plan.property state src input⟩
 
-/-- Equal scan data give equal last outputs. Proof sketch: the compiler certificates give
+/-- For two plans checked for their scripts on one catalog, equal plan data give
+{name}`Script.SameLastOn` on that catalog. Proof sketch: the compiler certificates give
 the two outputs, then the data equality identifies their evaluations. -/
 theorem CompiledScript.same_of_eq {p q : Plan} {a b : Script} {catalog : Database}
     (left : Checked p a catalog) (right : Checked q b catalog) (same : p = q) : a.SameLastOn b catalog := by

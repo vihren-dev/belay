@@ -90,22 +90,19 @@ def test_parameter_window_cases(runtime_root: Path, tmp_path: Path) -> None:
 def test_context_cases(runtime_root: Path, tmp_path: Path) -> None:
     """Acceptance cases A21 and A22. At any context with the catalog of shop, sql_select uses
     Sql.check_query_catalog_rows_at to prove the big-orders query reads the qualifying rows.
-    From a catalog hint, sql_run proves that DELETE preserves name resolution and composes it with the query.
+    From a catalog hint, sql_run proves that DELETE preserves name resolution.
     A DELETE that reads changes() also requires a known counter. At every context whose
     counters know `changes()`, `SELECT changes()` returns that value and keeps the connection. The
     instances show a result from the start that does not hold after a delete, and `changes()`, which has
     no result in the default environment but the count of the delete after it. The DELETE coverage
     fixtures check cover_delete with the model laws scalarSucceeds and jsonSucceeds and the
     inProjection subquery rule. FunctionCallSafetyCases checks scalarSucceeds, jsonSucceeds and
-    extractInputs_iff directly in the model. DeleteReadComparison proves that DELETE followed by SELECT
-    and the filtered SELECT succeed with equal row bags on every shop database. It also checks that
-    IS NOT 7 keeps the rows that DELETE WHERE customer_id IS 7 spares and that a projected bag
-    survives a plain DELETE exactly when the filters are disjoint. DeleteLastOutput compares
-    their last outputs and distinguishes an earlier SQL error from a final error. Every proof has only logical axioms."""
+    extractInputs_iff directly in the model. DeleteLastOutput proves the shop equivalence by sql_run, checks equality of the compiled
+    plans, and distinguishes an earlier SQL error from a final error. Every proof has only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectJoinSupport", 0),
-                       ("SelectJoinCases", 3), ("SelectDerivedSupport", 3), ("SelectContextCases", 5),
+                       ("SelectJoinCases", 3), ("SelectDerivedSupport", 3), ("SelectContextCases", 4),
                        ("SelectCounterContextCases", 1), ("FunctionCallSafetyCases", 8), ("DeleteCoverageCases", 14),
-                       ("DeleteReadComparison", 3), ("DeleteLastOutput", 1)),
+                       ("DeleteLastOutput", 1)),
                        timeout=120)
 
 
@@ -121,8 +118,8 @@ def test_function_fault_cases(runtime_root: Path, tmp_path: Path) -> None:
 
 def test_row_filter_algebra(runtime_root: Path, tmp_path: Path) -> None:
     """Check the four row-filter relations on empty, singleton, concatenated and duplicate
-    inputs and on SQL NULL. Audit all proofs, including the singleton truth tables."""
-    check_module_chain(runtime_root, tmp_path, (("RowFilterCases", 5),), timeout=30)
+    inputs and on SQL NULL. Check IS NOT row survival and the projected bag after DELETE. Audit all proofs, including the singleton truth tables."""
+    check_module_chain(runtime_root, tmp_path, (("RowFilterCases", 7),), timeout=30)
 
 
 def test_compiled_select_profiles(runtime_root: Path, tmp_path: Path) -> None:

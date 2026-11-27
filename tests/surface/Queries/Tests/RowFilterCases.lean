@@ -1,6 +1,9 @@
 import Belay.Sqlite.Model.Queries.Evaluation.RowFilter
 import Belay.Sqlite.Model.Queries.Evaluation.CorrelatedSubqueryRun
 
+import Belay.Sqlite.Model.Schema.Columns.TwoStateKeptRows
+import Belay.Sqlite.Model.Queries.Evaluation.ComparisonTruthRules
+
 set_option doc.verso true
 
 namespace RowFilterCases
@@ -57,6 +60,27 @@ theorem nullable_where :
     emptyOn_iff_filter_eq_nil]
   decide
 
+/-- Check {name}`Resolved.truthy_isNot` on a non-NULL operand. For every order, including one
+with a NULL customer, {lit}`customer_id IS NOT 7` keeps it exactly when {lit}`customer_id IS 7`
+would spare it in a DELETE. -/
+theorem survives_delete_customer_seven (ctx : Resolved.EvalContext) (row : List Value) :
+    let condition := fun op => some (Resolved.Expr.compare op (some .integer) (.column 1) (.literal (.integer 7)) .binary)
+    Resolved.conditionKeeps (condition .isNot) ctx row = !Resolved.conditionKeeps (condition .is) ctx row := by
+  exact Resolved.truthy_isNot _ _ _
+
+/-- Check that the two projection laws compose with the DELETE scan law. For every table,
+context, DELETE filter, selection and projection, a plain DELETE preserves the selected
+bag exactly when the selected and deleted rows are disjoint on the original scan. -/
+theorem delete_preserves_projected_bag_iff (table : Table) (ctx : Resolved.EvalContext)
+    (filter : Option Resolved.Expr) (keep : List Value → Bool) (project : List Value → α) :
+    (((Resolved.sourceRows (LiteralData.deleted ctx table filter)).filter keep).map project).Perm
+      (((Resolved.sourceRows table).filter keep).map project) ↔
+      RowFilter.DisjointOn (Resolved.sourceRows table) keep (Resolved.conditionKeeps filter ctx) := by
+  have rewrite := RowFilter.project_after_restrict (Resolved.sourceRows_deleted table ctx filter) keep project
+  rw [rewrite.congr_left _, RowFilter.project_restrict_iff, RowFilter.disjointOn_iff_impliesOn_complement]
+
+#print axioms survives_delete_customer_seven
+#print axioms delete_preserves_projected_bag_iff
 #print axioms empty_input
 #print axioms singleton_decisions
 #print axioms implication_on_append

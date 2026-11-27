@@ -5,6 +5,8 @@ import Belay.Sqlite.Model.Schema.Columns.TwoStateKeptRows
 
 set_option doc.verso true
 
+/-! Fuse a plain DELETE into the following scan and certify its step for the script compiler. -/
+
 namespace Belay.Sqlite.CompiledScript
 open Model hiding Database
 

@@ -1,0 +1,135 @@
+{
+  "caller": "codex",
+  "commit": "8c9121a035e1dcbbd003bb398f85ae418433d9f1",
+  "date": "2026-11-27T22:04:36+00:00",
+  "exit": 0,
+  "files": [
+    "packages/belay/Belay/Sqlite/Programs/Automation/SqlRun.lean",
+    "packages/belay/Belay/Sqlite/Programs/Claims/CompileSelect.lean",
+    "packages/belay/Belay/Sqlite/Programs/Claims/CompiledDelete.lean",
+    "packages/belay/Belay/Sqlite/Programs/Claims/CompiledExpr.lean",
+    "packages/belay/Belay/Sqlite/Programs/Claims/CompiledFilter.lean",
+    "packages/belay/Belay/Sqlite/Programs/Claims/CompiledScript.lean",
+    "packages/belay/lakefile.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/RowFilter.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261127-shop-last-output.status.md",
+    "plans/20261127-shop-last-output.task.md",
+    "reviews/20261127T203931Z-0a20e26f/resolution-1-20261127T204028Z.json",
+    "reviews/20261127T203931Z-0a20e26f/resolution-2-20261127T204029Z.json",
+    "reviews/20261127T203931Z-0a20e26f/resolution-3-20261127T204031Z.json",
+    "reviews/20261127T203931Z-0a20e26f/review.json",
+    "reviews/20261127T204248Z-23230b88/resolution-1-20261127T204258Z.json",
+    "reviews/20261127T204248Z-23230b88/review.json",
+    "tests/surface/Programs/Tests/CompiledDeleteCases.lean",
+    "tests/surface_fixture_roots.json",
+    "tests/surface_select_sources_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261127T220436Z-8c9121a0#1",
+      "line": 122,
+      "path": "packages/belay/Belay/Sqlite/Programs/Claims/CompiledFilter.lean",
+      "rule": "R2",
+      "severity": "should",
+      "text": "The formula of `Filter.accepts_expr` gained the `neg` flag, but the docstring (\"Predicate normalization preserves SQL truth on every row\") no longer restates it. Fix: say that for every binding, row, flag and expression, the filter of `Filter.expr` accepts the row exactly when the SQL truth of the bound expression differs from the flag."
+    },
+    {
+      "id": "20261127T220436Z-8c9121a0#2",
+      "line": 146,
+      "path": "packages/belay/Belay/Sqlite/Programs/Claims/CompiledFilter.lean",
+      "rule": "R2",
+      "severity": "should",
+      "text": "The docstring of the theorem `Filter.accepts_where` describes an action (\"Compile a WHERE test\") and not the proposition. Fix: say that for every binding, flag, optional predicate and row, the filter of `Filter.whereClause` accepts the row under empty outer bindings exactly when `Resolved.conditionKeeps` differs from the flag."
+    },
+    {
+      "id": "20261127T220436Z-8c9121a0#3",
+      "line": 24,
+      "path": "packages/belay/Belay/Sqlite/Programs/Claims/CompiledScript.lean",
+      "rule": "R2",
+      "severity": "should",
+      "text": "The docstrings of the `Prop` fields `Inputs.names` and `Inputs.valid` give the purpose of each field and not its formula. Fix: say that the resolve state of the connection equals that of a fresh connection on the catalog, and that the connection state holds `Model.Database.Valid` for the pinned profile."
+    },
+    {
+      "id": "20261127T220436Z-8c9121a0#4",
+      "line": 31,
+      "path": "packages/belay/Belay/Sqlite/Programs/Claims/CompiledScript.lean",
+      "rule": "R2",
+      "severity": "should",
+      "text": "The docstring of `Inputs.table` is an instruction that omits the assumption `located` and does not state the two conjuncts of the conclusion. Fix: say that when the catalog has a table shape at the position, the connection's database has the table with that shape and its stored rows, and its source rows are a permutation of the plan input at that position."
+    },
+    {
+      "id": "20261127T220436Z-8c9121a0#5",
+      "line": 139,
+      "path": "packages/belay/Belay/Sqlite/Programs/Claims/CompileSelect.lean",
+      "rule": "R2",
+      "severity": "should",
+      "text": "The docstring of `CompiledScript.same_of_eq` (\"Equal scan data give equal last outputs\") omits the assumptions that each plan is `Checked` for its script on the same catalog. Fix: say that for two plans checked for scripts `a` and `b` on one catalog, equality of the plans gives `a.SameLastOn b catalog`."
+    },
+    {
+      "id": "20261127T220436Z-8c9121a0#6",
+      "line": 1,
+      "path": "packages/belay/Belay/Sqlite/Programs/Claims/CompiledScript.lean",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The new module has no module docstring that gives its reason. Fix: add a module docstring that says the module defines the scan plan data and its certificate so that scripts with writes compile to one comparable plan."
+    },
+    {
+      "id": "20261127T220436Z-8c9121a0#7",
+      "line": 1,
+      "path": "packages/belay/Belay/Sqlite/Programs/Claims/CompiledDelete.lean",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The new module has no module docstring that gives its reason. Fix: add a module docstring that says the module fuses a plain DELETE into the following scan and proves the step law that the compiler uses."
+    },
+    {
+      "id": "20261127T220436Z-8c9121a0#8",
+      "line": 1,
+      "path": "tests/surface/Programs/Tests/CompiledDeleteCases.lean",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The new test module has no module docstring. Fix: add a module docstring that says the module checks `Script.compileLastOutput?`, `Script.compileScan?` and `sql_run` on scripts with plain DELETEs."
+    },
+    {
+      "id": "20261127T220436Z-8c9121a0#9",
+      "line": 1,
+      "path": "plans/20261127-shop-last-output.task.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The top of the new task file does not give its status, so a reader cannot tell whether the criteria are open or done. Fix: add a status line with its date below the title."
+    },
+    {
+      "id": "20261127T220436Z-8c9121a0#10",
+      "line": 3,
+      "path": "plans/20261127-shop-last-output.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status file does not say which acceptance criteria are met and which are open, for example whether the earlier shop proof infrastructure is retired while `DeleteReadComparison` is still a fixture root. Fix: add one line that gives the overall status and lists the criteria that remain open."
+    }
+  ],
+  "id": "20261127T220436Z-8c9121a0",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
