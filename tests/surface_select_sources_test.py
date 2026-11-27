@@ -116,3 +116,9 @@ def test_function_fault_cases(runtime_root: Path, tmp_path: Path) -> None:
     `WHERE 0` skips that call and makes the result empty. The instances check each claim and the negation
     of the two other claims. Every proof has only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectFunctionFaultCases", 3),), timeout=90)
+
+
+def test_row_filter_algebra(runtime_root: Path, tmp_path: Path) -> None:
+    """Check the four row-filter relations on empty, singleton, concatenated and duplicate
+    inputs and on SQL NULL. Audit all proofs, including the singleton truth tables."""
+    check_module_chain(runtime_root, tmp_path, (("RowFilterCases", 5),), timeout=30)

@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Queries.Evaluation.CorrelatedSubqueryRun
+import Belay.Sqlite.Model.Queries.Evaluation.RowFilter
 import Belay.Sqlite.Model.Schema.Dispatch.TwoStateNotExistsExcept
 import Belay.Sqlite.Model.Schema.Writes.PlainInsertRows
 import Belay.Sqlite.Model.Schema.ForeignKeys.ForeignKeyLookupRemoval
@@ -28,23 +29,17 @@ theorem Resolved.sourceRows_deleted (table : Table) (ctx : Resolved.EvalContext)
     (table.scan_filterRows (fun r => !LiteralData.selected ctx p r)).map Row.values
 
 /-- For every table, keep predicate, context and optional DELETE filter, every value in the
-original scan for which the keep predicate is true occurs after the delete exactly when
-{name}`Resolved.conditionKeeps` of the DELETE filter in that context is false for each such value.
+original scan for which the keep predicate is true occurs after the delete exactly when the keep
+predicate and the DELETE filter are disjoint on that scan ({name}`RowFilter.DisjointOn`).
 With no DELETE filter, this requires the keep predicate to be false for all rows in the scan.
 Proof sketch: {name}`Resolved.sourceRows_deleted`
 turns membership after the delete into membership in the filtered scan. -/
 theorem Resolved.selected_subset_deleted_iff {table : Table} {ctx : Resolved.EvalContext}
     {filter : Option Resolved.Expr} {keep : List Value → Bool} :
     (sourceRows table).filter keep ⊆ sourceRows (LiteralData.deleted ctx table filter) ↔
-      ∀ cells ∈ sourceRows table, keep cells = true → conditionKeeps filter ctx cells = false := by
-  have survivors := sourceRows_deleted table ctx filter
-  constructor
-  · intro subset cells member kept
-    have survived := survivors.mem_iff.mp (subset (List.mem_filter.mpr ⟨member, kept⟩))
-    simpa using (List.mem_filter.mp survived).2
-  · intro spared cells selected
-    obtain ⟨member, kept⟩ := List.mem_filter.mp selected
-    exact survivors.mem_iff.mpr (List.mem_filter.mpr ⟨member, by simpa using spared cells member kept⟩)
+      RowFilter.DisjointOn (sourceRows table) keep (conditionKeeps filter ctx) := by
+  rw [RowFilter.disjointOn_iff_impliesOn_complement, RowFilter.impliesOn_iff_subset]
+  exact forall_congr' fun _ => imp_congr_right fun _ => (sourceRows_deleted table ctx filter).mem_iff
 
 /-- For every table with distinct rowids whose rowid alias is the first column, every context, condition, and columns
 and collations that both start with the first column: no two results of the first term over the table compare equal
