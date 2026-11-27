@@ -2,7 +2,6 @@ import Belay
 
 set_option doc.verso true
 set_option sql.check false
-set_option maxRecDepth 8192
 
 namespace CompiledSelectCases
 open Belay.Sqlite
@@ -50,8 +49,43 @@ theorem unsupported :
     ((sql r"SELECT id FROM items ORDER BY id").compileLastOutput? items).isNone = true := by
   exact ⟨rfl, rfl⟩
 
+/-- Compile two closed WHERE expressions on an arbitrary input, then compare the plans.
+Proof sketch: each compiled condition rejects every row. -/
+theorem constant_filters :
+    (sql r"SELECT 1 FROM items WHERE FALSE") ~ (sql r"SELECT 1 FROM items WHERE 1 = 2") on items := by
+  apply (LastOutputPlan.sameLastOn_iff
+    ((Script.compileLastOutput? _ _).get (by rfl)).property
+    ((Script.compileLastOutput? _ _).get (by rfl)).property).mpr
+  intro db _ env _
+  apply Eq.trans (LastOutputPlan.scan_eq_empty _ _ _ (by decide +kernel) db env)
+  exact (LastOutputPlan.scan_eq_empty _ _ _ (by decide +kernel) db env).symm
+
+/-- A sum of two columns compiles to SQL addition on arbitrary input values.
+Proof sketch: reduce the row function on a row containing the two operands. -/
+theorem column_sum (args : List Value) (x y : Value) :
+    (CompiledExpr.compile args (.arithmetic .add (.column 0) (.column 1))).run [x, y] =
+      (ArithmeticOperator.add.apply x y, .none) := by rfl
+
+/-- An overflowing constant call carries its fault even when evaluated without a row.
+Proof sketch: compute the fault of the compiled absolute value. -/
+theorem constant_fault :
+    ((CompiledExpr.compile [] (.scalar .abs (.cons (.literal (.integer (-9223372036854775808))) .nil))).run []).2 =
+      .must := by decide +kernel
+
+/-- Run the compiled SQL projection on numeric and NULL operands.
+Proof sketch: compare the resulting bag with the two expected rows. -/
+theorem sum_output :
+    let input := db! r"CREATE TABLE t(a, b); INSERT INTO t VALUES (2, 3), (NULL, 7);"
+    let script := sql r"SELECT a + b FROM t"
+    (((script.compileLastOutput? input).get (by rfl)).val input Env.newConnection).1 =
+      (LastOutputPlan.rowBag [[.integer 5], [.null]]).1 := by decide +kernel
+
 #print axioms equivalent
 #print axioms bound_output
 #print axioms unsupported
+#print axioms constant_filters
+#print axioms column_sum
+#print axioms constant_fault
+#print axioms sum_output
 
 end CompiledSelectCases

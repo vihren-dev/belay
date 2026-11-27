@@ -2,6 +2,7 @@ import Belay.Sqlite.Programs.Claims.LastOutput
 import Belay.Sqlite.Programs.Claims.ReadStepRule
 import Belay.Sqlite.Schema.Dispatch.SelectCatalogExecution
 import Belay.Sqlite.Model.Programs.StatementRunLaws.SelectCalmRule
+import Belay.Sqlite.Programs.Claims.CompiledExpr
 
 set_option doc.verso true
 
@@ -26,12 +27,74 @@ theorem LastOutputPlan.rowBag_eq_iff (xs ys : List (List Value)) :
   · intro perm
     simp only [rowBag, (Resolved.normalForm_eq_iff_perm xs ys).mpr perm]
 
-/-- The last-output plan for a plain SELECT. Filter the scanned table with the resolved
-WHERE and project each surviving row with the statement's bindings. An unordered query
-returns one normalized bag, including all duplicate rows. -/
-def LastOutputPlan.scan (pos : Nat) (q : Resolved.Query) (args : List Value) : LastOutputPlan := fun db _ =>
-  let ctx := Resolved.EvalContext.bound args
-  rowBag ((Resolved.filtered ctx q (db.scanAt pos)).map (q.rowOutput ctx))
+/-- Compile a WHERE to a restriction on the input rows. A constant false or NULL condition
+rejects all rows immediately. An absent condition accepts the full scan. -/
+private def compileWhere (args : List Value) : Option Resolved.Expr → (Unit → List (List Value)) → List (List Value)
+  | none => fun source => source ()
+  | some e => match CompiledExpr.compile args e with
+    | .constant result => if Resolved.truthy result.1 then (fun source => source ()) else fun _ => []
+    | .perRow f => fun source => (source ()).filter fun row => Resolved.truthy (f row).1
+
+/-- Compile each projection before visiting rows. Scalar expressions reuse their bound
+values, and aggregate outputs retain the model's single-row interpretation. -/
+private def compileColumn (args : List Value) : Resolved.Output → List Value → Value
+  | .scalar e => let plan := CompiledExpr.compile args e; fun row => (plan.run row).1
+  | .aggregate a => fun row => a.eval (.bound args) [row]
+
+/-- The compiled WHERE selects exactly the model's filtered rows on every input.
+Proof sketch: use expression correctness, then simplify filtering by a constant decision. -/
+private theorem compileWhere_eq (args : List Value) (q : Resolved.Query) (xs : List (List Value)) :
+    compileWhere args q.filter (fun _ => xs) = Resolved.filtered (.bound args) q xs := by
+  unfold Resolved.filtered
+  cases h : q.filter with
+  | none => exact (List.filter_eq_self.mpr (fun _ _ => rfl)).symm
+  | some e =>
+    simp only [Option.all_some]
+    have same := List.filter_congr (l := xs) (fun r _ =>
+      congrArg (fun result => Resolved.truthy result.1) (CompiledExpr.run_compile args e r))
+    apply Eq.trans _ same
+    cases plan : CompiledExpr.compile args e with
+    | constant result =>
+      cases keep : Resolved.truthy result.1 <;> simp only [compileWhere, plan, CompiledExpr.run, keep,
+        Bool.false_eq_true, ite_false, ite_true]
+      · exact (List.filter_eq_nil_iff.mpr (fun _ _ => by decide)).symm
+      · exact (List.filter_eq_self.mpr (fun _ _ => rfl)).symm
+    | perRow f => simp [compileWhere, plan, CompiledExpr.run]
+
+/-- The last-output plan for a plain SELECT. Compile the WHERE and projection expressions
+with their bindings before reading the database. The result records every duplicate. -/
+def LastOutputPlan.scan (pos : Nat) (q : Resolved.Query) (args : List Value) : LastOutputPlan :=
+  let restrict := compileWhere args q.filter
+  let columns := q.columns.map (compileColumn args)
+  fun db _ => rowBag ((restrict (fun _ => db.scanAt pos)).map fun row => columns.map (fun f => f row))
+
+/-- A closed WHERE that evaluates to false or NULL gives an empty result on every database.
+Proof sketch: inspect the compiled condition. Only a rejecting constant meets the premise. -/
+theorem LastOutputPlan.scan_eq_empty (pos : Nat) (q : Resolved.Query) (args : List Value)
+    (rejects : q.filter.any (fun e => (CompiledExpr.compile args e).rejectsAll)) (db : Database) (env : Env) :
+    scan pos q args db env = rowBag [] := by
+  cases h : q.filter with
+  | none => simp [h] at rejects
+  | some e =>
+    cases plan : CompiledExpr.compile args e with
+    | perRow f => simp [h, plan, CompiledExpr.rejectsAll] at rejects
+    | constant result =>
+      simp [h, plan, CompiledExpr.rejectsAll] at rejects
+      simp [scan, h, compileWhere, plan, rejects]
+
+/-- On every input the compiled scan gives the normalized bag of the model's projected
+rows. Proof sketch: rewrite the filter and each compiled scalar with their evaluation laws. -/
+private theorem scan_eq (pos : Nat) (q : Resolved.Query) (args : List Value) (db : Database) (env : Env) :
+    LastOutputPlan.scan pos q args db env = LastOutputPlan.rowBag
+      ((Resolved.filtered (.bound args) q (db.scanAt pos)).map (q.rowOutput (.bound args))) := by
+  unfold LastOutputPlan.scan
+  simp only [compileWhere_eq, List.map_map]
+  congr 1
+  apply List.map_congr_left
+  intro row _
+  apply List.map_congr_left
+  intro col _
+  cases col <;> simp [compileColumn, CompiledExpr.run_compile, Resolved.Expr.eval]
 
 /-- A calm singleton SELECT whose resolution is a plain scan with a known table has
 exactly the scan plan's last output on every admitted start. Proof sketch: transport
@@ -67,6 +130,7 @@ private theorem scan_correct {catalog : Database} {stmt : Syntax.Statement} {arg
         (by intro impossible; cases impossible) (by simp [Resolved.Query.fails, Resolved.Query.simple]) rfl,
         Resolved.Query.results_plain_unordered _ rfl rfl rfl rfl rfl rfl]
       simp only [rows, ctx, scanned]
+  rw [scan_eq]
   apply Script.lastOutputProfile_of_check
   obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, form⟩ := Syntax.Statement.select_of_asQuery select
   apply Sql.check_send_select form
