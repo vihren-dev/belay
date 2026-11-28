@@ -20,6 +20,12 @@ import kernel_cost
 STANDARD_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
 """The model's trust policy for every audited theorem."""
 
+COMPILE_DEADLINE_SECONDS = 300
+"""The deadline for one Lean file of the experiment; the slowest one takes a few seconds."""
+
+PROBES_DEADLINE_SECONDS = 120
+"""The deadline for the probe script, which gives sqlite3 itself 60 seconds."""
+
 
 def module_name(path: Path) -> str:
     """The Lean module name of a file under the working directory."""
@@ -31,7 +37,8 @@ def compile_file(path: Path, output: Path) -> dict[str, list[str]]:
     requested = re.findall(r"^#print axioms (\S+)", path.read_text(), re.MULTILINE)
     result = subprocess.run(
         ["lean", "-o", str(path.with_suffix(".olean")), str(path)],
-        capture_output=True, text=True, timeout=300, check=False,
+        capture_output=True, text=True, timeout=COMPILE_DEADLINE_SECONDS,
+        check=False,
     )
     log = result.stdout + result.stderr
     (output / f"{module_name(path)}.log").write_text(log)
@@ -42,8 +49,10 @@ def compile_file(path: Path, output: Path) -> dict[str, list[str]]:
     closures: dict[str, list[str]] = {name: [] for name in free}
     for name, text in reports:
         axioms = {part.strip() for part in text.split(",") if part.strip()}
-        if not axioms <= STANDARD_AXIOMS:
-            raise RuntimeError(f"{name}: forbidden axioms {sorted(axioms)}")
+        forbidden = axioms - STANDARD_AXIOMS
+        if forbidden:
+            raise RuntimeError(f"{path}: {name} depends on the forbidden axioms "
+                               f"{sorted(forbidden)}; remove them from its proof")
         closures[name] = sorted(axioms)
     if len(closures) != len(requested):
         raise RuntimeError(f"{path}: missing or duplicate axiom audits")
@@ -64,7 +73,8 @@ def main(output: Path, sqlite: str) -> None:
     audits = {name: compile_file(files[name], output)
               for name in TopologicalSorter(dependencies).static_order()}
     (output / "proofs.json").write_text(json.dumps(audits, indent=2) + "\n")
-    subprocess.run(["bash", "probes/run-probes.sh", sqlite], timeout=120, check=True)
+    subprocess.run(["bash", "probes/run-probes.sh", sqlite], timeout=PROBES_DEADLINE_SECONDS,
+                   check=True)
     print("probes: output equals probes/probes.expected", flush=True)
     kernel_cost.main(output)
 

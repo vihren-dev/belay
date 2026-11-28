@@ -41,6 +41,7 @@ theorem outputs_equal :
     tied.map Output.ofResults = byName.map Output.ofResults := by
   rw [unordered_eq_byName, tied_eq_byName]; exact ⟨rfl, rfl⟩
 
+#print axioms byName_eq
 #print axioms unordered_eq_byName
 #print axioms tied_eq_byName
 #print axioms outputs_equal

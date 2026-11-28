@@ -5,8 +5,10 @@ quotient of lists by permutation, or as the sorted list that the model uses now
 (`Resolved.normalForm`). Model tests decide outputs with `decide +kernel`, so this script
 measures how long the kernel takes to decide that two orders of the same rows give equal bags,
 for each representation and for several row counts. It writes one Lean file for each case,
-compiles it with the pinned toolchain and model package, and records the time of the best of
-three runs minus the time of a file that has only the imports. All runs have fixed deadlines.
+compiles it with the pinned toolchain and model package, and records the best wall time of
+three runs minus the best wall time of a baseline file. The baseline file has the imports and
+the same definitions (`row`, `Bag`, its equality instance and `bagOf`), but no proof. All runs
+have fixed deadlines.
 """
 
 import json
@@ -36,6 +38,8 @@ CASES = {
 }
 SIZES = [10, 50, 100, 200]
 RUNS = 3
+COMPILE_DEADLINE_SECONDS = 600
+"""The deadline for one compilation; 200 rows take about 14 seconds."""
 
 
 def compile_seconds(path: Path) -> float:
@@ -44,7 +48,7 @@ def compile_seconds(path: Path) -> float:
     for _ in range(RUNS):
         start = time.monotonic()
         result = subprocess.run(["lean", str(path)], capture_output=True, text=True,
-                                timeout=600, check=False)
+                                timeout=COMPILE_DEADLINE_SECONDS, check=False)
         elapsed = time.monotonic() - start
         if result.returncode or result.stdout or result.stderr:
             raise RuntimeError(f"{path.name} failed:\n{result.stdout}{result.stderr}")

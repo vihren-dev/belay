@@ -21,3 +21,7 @@ Relevant sources: `packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Executi
   `/nix/store/2d2xyfsmjx1z8g3l21wi08x4w2ivrdm8-bag-results-experiments`: `CurrentOutputs`
   compiled with 3 audited theorems on the standard axioms, the probe output equals
   `probes/probes.expected`, kernel cost for 10, 50, 100 and 200 rows. Checks: this Nix build.
+- 2026-11-28: review of the experiments: audit `byName_eq`, require exit status 1 of the probe
+  run, report only the forbidden axioms, name the deadlines, describe the cost baseline. Nix
+  build `/nix/store/gn0rarazw0rkw2n42zpb6d4i2d0c9fxc-bag-results-experiments`: 4 audited
+  theorems, probe output equal, kernel cost recorded.
