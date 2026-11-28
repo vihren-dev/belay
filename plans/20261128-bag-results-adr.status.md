@@ -94,3 +94,6 @@ Relevant sources: `packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Executi
   of the surface package do not read the sample, and that a user property on `Bag.sample` is
   about the sorted rows. The status entry above says "equality of bags of rows". Text only; the
   cited Nix build does not change. Tests: `tests/docs_test.py`.
+- 2026-11-28: review 20261128T171051Z-4c614dd8 (0 must, 2 should). D4 gives the three timings
+  for 100 rows with their decisions, and the consequence says "comparable" and gives the
+  increases with their row counts. Text only. Tests: `tests/docs_test.py`.

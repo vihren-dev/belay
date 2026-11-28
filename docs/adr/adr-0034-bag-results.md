@@ -234,7 +234,8 @@ model uses it in two ways:
 
 - **Equality.** The model declares `Bag.decEqBySample` as the instance for bags of rows, with a
   higher priority than the decision by `List.Perm`. In the benchmark, `decide +kernel` then
-  costs about as much as for normal-form lists: 2.5 s instead of 3.3 s for 100 rows.
+  costs about as much as for normal-form lists. For 100 rows: 2.507 s through samples,
+  2.428 s for normal-form lists, and 3.276 s by `List.Perm`.
 - **One list to show.** `#eval` display (`OutputRepr`), the `outputJson` functions of the
   tests, `ToExpr` for the counterexample replay, and the text of each choice in checked SQL
   documentation blocks show the sample of each group.
@@ -410,9 +411,9 @@ Capability groups of the simplification goal:
   example that WHERE commutes with UNION ALL.
 - **Claims on order need ORDER BY.** A claim that reads the order of rows of a query without
   ORDER BY has a proof for each order, or is stated on the bag.
-- **No extra kernel time in the benchmark.** With the decision through samples, one equality
-  of two bags of rows costs about as much as the equality of normal-form lists (2% to 3% more
-  in the cited build).
+- **Comparable kernel time in the benchmark.** With the decision through samples, one
+  equality of two bags of rows costs about as much as the equality of normal-form lists. In
+  the cited build, it took 3% more time for 100 rows and 2% more for 200 rows.
 - **No judge change.** The judge already compares bags and tie groups, and the prediction does
   not change.
 
