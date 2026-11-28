@@ -88,12 +88,13 @@ private theorem toBag_ofLists (gs : List (List α)) :
   | nil => rfl
   | cons g gs ih => simp only [List.map_cons, toBag, List.foldr_cons] at ih ⊢; rw [ih]; rfl
 
-/-- For each `le` and bag `b`: every ranking of `b` has the rows of `b`. So a reader whose
+/-- For each `le` and bag `b`: `rank le b` gives at least one ranking, and the rows of each
+ranking that it gives are exactly the rows of `b`, with their duplicates. So a reader whose
 result is a function of the bag of rows gives the same result with and without ORDER BY. This
 says nothing about readers that see the order: a scalar subquery reads its first row (probe
 P11), and an outer `group_concat` can read the order of a FROM subquery (probe P12). The
-theorem also assumes nothing about errors: in SQLite a sort key can fail, and `le` here is a
-total function. -/
+theorem does not model errors: in SQLite a sort key can fail, and `le` here is a total
+function. -/
 theorem toBag_rank (b : Bag α) : toBag <$> rank le b = pure b := by
   induction b using Bag.induction_on with
   | of_list l =>

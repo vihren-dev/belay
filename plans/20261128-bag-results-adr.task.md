@@ -1,6 +1,6 @@
 # Experiments and ADR: query results as bags
 
-Created 2026-11-28.
+Created 2026-11-28. DONE on 2026-11-28: the ADR is PROPOSED and waits for the owner.
 Status: [20261128-bag-results-adr.status.md](20261128-bag-results-adr.status.md).
 Discussion: [Belay issue 489](https://github.com/vihren-dev/belay/issues/489), comment of
 2026-11-28 ("Rethinking `A ~ B`").

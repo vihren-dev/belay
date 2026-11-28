@@ -66,9 +66,9 @@ their canonical forms differ. Equivalence of results with several rankings is no
 of their sets of canonical forms.
 Proof sketch: both results permit exactly the lists `[a, b]` and `[b, a]`: the one group
 permits the two orders of its rows, and each ranking of two groups of one row permits one
-list. The canonical form keeps the group `{a, b}`, because its rows differ, and keeps the two
-rankings of one row each, so `[{a}, {b}]` is a canonical form of the second result but not of
-the first. -/
+list. The canonical form keeps the group `{a, b}`, because its rows differ, and keeps both
+groups of one row in each ranking of the second result, so `[{a}, {b}]` is a canonical form of
+the second result but not of the first. -/
 theorem equivalent_but_canonical_results_differ [DecidableEq α] {a b : α} (ab : a ≠ b) :
     let one : ND (Ranked α) := pure [Bag.ofList [a, b]]
     let two : ND (Ranked α) := fun r =>

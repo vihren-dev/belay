@@ -31,7 +31,7 @@ error), compares their output with `probes/probes.expected`, and measures the ke
 | `model-path.txt`, `toolchain-path.txt`, `sqlite-path.txt` | the pinned store paths |
 
 The results below are from the Nix build
-`/nix/store/yp3nx9fvvdb9ls9dzrwlmq51112m49b6-bag-results-experiments`.
+`/nix/store/zhfh5aq45zr0qrzkcr5bmcy5y6hz7cci-bag-results-experiments`.
 
 ## Current outputs of the model
 
@@ -150,17 +150,17 @@ are:
   `Resolved.compareRows`.
 
 Each time is the best wall time of three runs, minus the best wall time of a baseline file with
-the same imports and definitions but no proof (0.209 s).
+the same imports and definitions but no proof (0.210 s).
 
 | Rows | Quotient | Normal form | Quotient / normal form |
 | ---: | ---: | ---: | ---: |
-| 10 | 0.031 s | 0.029 s | 1.1 |
-| 50 | 0.803 s | 0.633 s | 1.3 |
-| 100 | 3.270 s | 2.361 s | 1.4 |
-| 200 | 13.147 s | 9.206 s | 1.4 |
+| 10 | 0.030 s | 0.036 s | 0.8 |
+| 50 | 0.819 s | 0.634 s | 1.3 |
+| 100 | 3.297 s | 2.378 s | 1.4 |
+| 200 | 13.250 s | 9.088 s | 1.5 |
 
-Both representations are quadratic in the number of rows. The quotient costs about 1.4 times
-the normal form for 100 and 200 rows; for 10 rows the two are equal within the noise.
+Both representations are quadratic in the number of rows. The quotient costs about 1.4 to 1.5
+times the normal form for 100 and 200 rows; for 10 rows the two are equal within the noise.
 
 ## Code lines
 

@@ -34,8 +34,8 @@ theorem arrange_ofList_iff {l m : List α} : (ofList l).arrange m ↔ m.Perm l :
 /-- For each list function `f` that gives equal results on permutations, and each bag `b`:
 `f` applied to an arbitrary arrangement of `b` is deterministic. Its one result is the value
 of `f` on any list of `b`. Examples are `count` and the sum of integers without overflow.
-SQLite's `min` and `max` are examples only when rows that compare equal are identical: under
-NOCASE, `max` of `a` and `A` depends on the order. -/
+SQLite's `min` and `max` are examples only when the values that compare equal at the extremum
+are identical: under NOCASE, `max` of `a` and `A` depends on the order. -/
 theorem map_arrange_of_perm (f : List α → β) (h : ∀ l m, l.Perm m → f l = f m) (b : Bag α) :
     f <$> b.arrange = pure (Quotient.lift f h b) := by
   induction b using induction_on with

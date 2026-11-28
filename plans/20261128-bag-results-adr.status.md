@@ -2,7 +2,7 @@
 
 Created 2026-11-28.
 Task: [20261128-bag-results-adr.task.md](20261128-bag-results-adr.task.md).
-Status: IN PROGRESS.
+Status: DONE (2026-11-28). The ADR is PROPOSED and waits for the owner's decisions.
 
 Relevant sources: `packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Execution/Output.lean`,
 `packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Execution/PossibleResults.lean`,
@@ -37,3 +37,9 @@ Relevant sources: `packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Executi
   of an order-free aggregate, the evaluation order of `select`. Nix build
   `/nix/store/yp3nx9fvvdb9ls9dzrwlmq51112m49b6-bag-results-experiments`: 57 audited theorems on
   the standard axioms, probe output equal, 1,246 code lines.
+- 2026-11-28: the integration survey `docs/records/bag-results-integration-survey.md` and the ADR
+  `docs/adr/adr-0034-bag-results.md` (PROPOSED, five owner decisions). Review
+  20261128T140607Z-9e4281c5: three docstring wordings of the prototype. Nix build
+  `/nix/store/zhfh5aq45zr0qrzkcr5bmcy5y6hz7cci-bag-results-experiments`: 57 audited theorems on
+  the standard axioms, probe output equal, kernel cost and 1,246 code lines; the findings and
+  the ADR cite this build. Tests: `tests/docs_test.py` (links of the new documents).
