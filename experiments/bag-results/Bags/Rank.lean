@@ -88,8 +88,12 @@ private theorem toBag_ofLists (gs : List (List α)) :
   | nil => rfl
   | cons g gs ih => simp only [List.map_cons, toBag, List.foldr_cons] at ih ⊢; rw [ih]; rfl
 
-/-- For each `le` and bag `b`: every ranking of `b` has the rows of `b`. ORDER BY in a
-subquery without LIMIT is invisible to the query that reads it. -/
+/-- For each `le` and bag `b`: every ranking of `b` has the rows of `b`. So a reader whose
+result is a function of the bag of rows gives the same result with and without ORDER BY. This
+says nothing about readers that see the order: a scalar subquery reads its first row (probe
+P11), and an outer `group_concat` can read the order of a FROM subquery (probe P12). The
+theorem also assumes nothing about errors: in SQLite a sort key can fail, and `le` here is a
+total function. -/
 theorem toBag_rank (b : Bag α) : toBag <$> rank le b = pure b := by
   induction b using Bag.induction_on with
   | of_list l =>
@@ -106,7 +110,8 @@ theorem toBag_rank (b : Bag α) : toBag <$> rank le b = pure b := by
 
 /-- For each `le` and bag `b`: if `le x y` holds for all rows `x` and `y` of `b`, then the
 lists that the ranking permits are the arrangements of `b`. Every pair of rows ties, so the
-ranking is one group. -/
+ranking of a bag with rows is one group; the ranking of the empty bag has no group and permits
+only the empty list. -/
 theorem rank_arrange_of_all_tie (b : Bag α) (all_tie : ∀ x ∈ b, ∀ y ∈ b, le x y = true) :
     (rank le b >>= arrange) = b.arrange := by
   have key (m : List α) (hm : b.arrange m) :

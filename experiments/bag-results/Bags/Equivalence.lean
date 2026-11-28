@@ -63,7 +63,12 @@ theorem equivalent_pure_iff [DecidableEq α] (r r' : Ranked α) :
 /-- For all different rows `a` and `b`: the result with the one ranking `[{a, b}]` and the
 result with the two rankings `[{a}, {b}]` and `[{b}, {a}]` are equivalent, but the sets of
 their canonical forms differ. Equivalence of results with several rankings is not equality
-of their sets of canonical forms. -/
+of their sets of canonical forms.
+Proof sketch: both results permit exactly the lists `[a, b]` and `[b, a]`: the one group
+permits the two orders of its rows, and each ranking of two groups of one row permits one
+list. The canonical form keeps the group `{a, b}`, because its rows differ, and keeps the two
+rankings of one row each, so `[{a}, {b}]` is a canonical form of the second result but not of
+the first. -/
 theorem equivalent_but_canonical_results_differ [DecidableEq α] {a b : α} (ab : a ≠ b) :
     let one : ND (Ranked α) := pure [Bag.ofList [a, b]]
     let two : ND (Ranked α) := fun r =>

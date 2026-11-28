@@ -33,7 +33,9 @@ theorem arrange_ofList_iff {l m : List α} : (ofList l).arrange m ↔ m.Perm l :
 
 /-- For each list function `f` that gives equal results on permutations, and each bag `b`:
 `f` applied to an arbitrary arrangement of `b` is deterministic. Its one result is the value
-of `f` on any list of `b`. Examples are count, min, max and the total of integers. -/
+of `f` on any list of `b`. Examples are `count` and the sum of integers without overflow.
+SQLite's `min` and `max` are examples only when rows that compare equal are identical: under
+NOCASE, `max` of `a` and `A` depends on the order. -/
 theorem map_arrange_of_perm (f : List α → β) (h : ∀ l m, l.Perm m → f l = f m) (b : Bag α) :
     f <$> b.arrange = pure (Quotient.lift f h b) := by
   induction b using induction_on with
@@ -44,7 +46,11 @@ theorem map_arrange_of_perm (f : List α → β) (h : ∀ l m, l.Perm m → f l 
 #print axioms map_arrange_of_perm
 
 /-- For each function `f` and all lists `l` and `L`: if `L` is a permutation of `l.map f`,
-then `L` is the map of a permutation of `l`. -/
+then `L` is the map of a permutation of `l`.
+Proof sketch: induction on the permutation from `l.map f` to `L`, for each source list whose
+map is the start of the permutation. A step that keeps the first value keeps the first row; a
+swap of two values swaps the two rows that map to them, so rows with equal values are never
+confused; a composition of two steps composes the permutations of the rows. -/
 theorem exists_perm_of_perm_map (f : α → β) {l : List α} {L : List β}
     (p : (l.map f).Perm L) : ∃ l' : List α, l'.Perm l ∧ l'.map f = L := by
   suffices ∀ {L₁ L₂ : List β}, L₁.Perm L₂ →

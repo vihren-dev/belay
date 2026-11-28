@@ -32,3 +32,8 @@ Relevant sources: `packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Executi
   `/nix/store/yrak1zfpf6m2ya1rincc2gjiw0gv5gsv-bag-results-experiments`: 18 Lean files compiled
   without warnings, 57 audited theorems on the standard axioms, probe output equal, kernel cost
   and per-file code lines recorded. Checks: this Nix build.
+- 2026-11-28: review 20261128T140202Z-26e9a1e1 of the prototype: `toBag_rank` says which
+  readers it covers, proof sketches for four long proofs, `max` under NOCASE is not an example
+  of an order-free aggregate, the evaluation order of `select`. Nix build
+  `/nix/store/yp3nx9fvvdb9ls9dzrwlmq51112m49b6-bag-results-experiments`: 57 audited theorems on
+  the standard axioms, probe output equal, 1,246 code lines.

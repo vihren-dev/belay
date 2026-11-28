@@ -4,16 +4,18 @@ import Bags.Window
 /-!
 # A single-table SELECT
 
-The pipeline of a single-table SELECT in SQLite's order of clauses: WHERE, ORDER BY, the
-window, then the projection. The theorems show that the pipeline composes with the algebra
+The pipeline of a single-table SELECT in the prototype's order of evaluation: WHERE, ORDER
+BY, the window, then the projection. The order assumes that the projection is a total function
+and that ORDER BY compares the input rows; SQLite can evaluate in another order. The theorems show that the pipeline composes with the algebra
 of bags.
 -/
 
 namespace BagResults
 variable {ρ ο : Type}
 
-/-- A single-table SELECT in SQLite's order of clauses: WHERE `keep`, ORDER BY `le`, OFFSET
-`skip`, LIMIT `limit`, then the projection `project`. -/
+/-- A single-table SELECT in the prototype's order of evaluation: WHERE `keep`, ORDER BY `le`
+on the input rows, OFFSET `skip`, LIMIT `limit`, then the projection `project`, a total
+function. -/
 def select (keep : ρ → Bool) (le : ρ → ρ → Bool) (skip : Nat) (limit : Option Nat)
     (project : ρ → ο) (rows : Bag ρ) : ND (Ranked ο) := do
   let ranked ← Ranked.rank le (rows.filter keep)

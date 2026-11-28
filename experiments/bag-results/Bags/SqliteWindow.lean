@@ -86,7 +86,12 @@ theorem card_window_sqlite_ofBag (offset limit : Int) (b : Bag α) :
 /-- For each offset `skip`, limit `keep` and all bags `b` and `c`: a window of the bag `b`
 without ORDER BY can have the rows `c` if and only if `c` is a sub-bag of `b` with
 `sliceCount skip keep (card b)` rows. OFFSET and LIMIT without ORDER BY keep any sub-bag of
-that size of the rows. -/
+that size of the rows.
+Proof sketch: by the cases of `window` on one group. When the offset skips the group or the
+limit is 0, the window has no group, its rows are the empty bag, and the count is 0; the
+empty bag is the only sub-bag with no rows. In the other cases the window is one group, a
+result of `Bag.take` with the count as its limit, and `Bag.take_iff` says that such a result is
+a sub-bag with that number of rows. -/
 theorem window_ofBag_iff (skip : Nat) (keep : Option Nat) (b c : Bag α) :
     (toBag <$> (ofBag b).window skip keep) c ↔ c.Sub b ∧ c.card = sliceCount skip keep b.card := by
   have empty (zero : sliceCount skip keep b.card = 0) :

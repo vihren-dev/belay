@@ -31,7 +31,11 @@ theorem first_group_fixed {g : Bag α} {gs : Ranked α} {L : List α} (h : arran
 
 /-- For each group `g` with two different rows, groups `gs` and number `k` with
 `0 < k < card g`: there are two lists that `g :: gs` permits whose first `k` rows form
-different bags. -/
+different bags.
+Proof sketch: write the rows of `g` as `a`, `b` and the rest `d`, with `a ≠ b`. One list
+starts with `a`, then `d`, then `b`; the other starts with `b`, then `d`, then `a`. Both
+continue with one list of `gs`. Their first `k` rows are `a` or `b` followed by the same `k - 1`
+rows of `d`, because `k < card g`, so their bags differ by `a` and `b`. -/
 theorem first_group_varies {g : Bag α} (gs : Ranked α) (two : ∃ a ∈ g, ∃ b ∈ g, a ≠ b)
     {k : Nat} (pos : 0 < k) (lt : k < g.card) :
     ∃ L₁ L₂, arrange (g :: gs) L₁ ∧ arrange (g :: gs) L₂ ∧

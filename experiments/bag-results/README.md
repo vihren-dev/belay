@@ -31,7 +31,7 @@ error), compares their output with `probes/probes.expected`, and measures the ke
 | `model-path.txt`, `toolchain-path.txt`, `sqlite-path.txt` | the pinned store paths |
 
 The results below are from the Nix build
-`/nix/store/yrak1zfpf6m2ya1rincc2gjiw0gv5gsv-bag-results-experiments`.
+`/nix/store/yp3nx9fvvdb9ls9dzrwlmq51112m49b6-bag-results-experiments`.
 
 ## Current outputs of the model
 
@@ -93,7 +93,7 @@ theorem has a `#print axioms` line after it; the Nix build records the axioms of
 | `Slice.lean`, `Window.lean`, `SqliteWindow.lean` | OFFSET and LIMIT on lists (`slice`) and over ranked rows (`Ranked.window`); SQLite's integer OFFSET and LIMIT (`sqliteOffset`, `sqliteLimit`) |
 | `Canonical.lean`, `CanonicalUnique.lean` | the canonical form of ranked rows (`Ranked.canon`) |
 | `Equivalence.lean` | the lists that an application can read (`observe`) and the equivalence of two results (`Equivalent`) |
-| `Select.lean` | a single-table SELECT in SQLite's order of clauses, as an example of composition |
+| `Select.lean` | a single-table SELECT, as an example of composition: WHERE, ORDER BY on the input rows, the window, then a total projection |
 | `Examples.lean` | `decide +kernel` and `decide` on equalities of small literal bags |
 
 The theorems for the points of the task file:
@@ -154,10 +154,10 @@ the same imports and definitions but no proof (0.209 s).
 
 | Rows | Quotient | Normal form | Quotient / normal form |
 | ---: | ---: | ---: | ---: |
-| 10 | 0.032 s | 0.032 s | 1.0 |
-| 50 | 0.825 s | 0.640 s | 1.3 |
-| 100 | 3.298 s | 2.375 s | 1.4 |
-| 200 | 13.212 s | 9.202 s | 1.4 |
+| 10 | 0.031 s | 0.029 s | 1.1 |
+| 50 | 0.803 s | 0.633 s | 1.3 |
+| 100 | 3.270 s | 2.361 s | 1.4 |
+| 200 | 13.147 s | 9.206 s | 1.4 |
 
 Both representations are quadratic in the number of rows. The quotient costs about 1.4 times
 the normal form for 100 and 200 rows; for 10 rows the two are equal within the noise.
