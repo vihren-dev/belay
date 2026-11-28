@@ -159,7 +159,7 @@ which Lake prints again in each run
 | A fact about one database, and each counterexample | Reliable: `decide +kernel` and `sql_refute`. |
 | A false claim about every database of a schema | `#sql_check` finds the rows when a small database shows the failure. |
 | The rows of a `SELECT`, for every database of a schema | `sql_select`, with the fact `db.HasCatalog shop` as its hint. |
-| The result of an insert or a delete, for every database | `sql_run` proves a part of these. It can stop at its time limit ([#359](https://github.com/vihren-dev/belay/issues/359)). |
+| The result of an insert or a delete, for every database | `sql_run` proves a part of these. For a plain DELETE on a fresh connection, `sql_run [schema]` uses `schema : db.HasCatalog shop` to resolve the statement, find its table, and try the coverage proof. If the modeled case stays open, open the scope `Belay.Sqlite.Run.DeleteCoverage` and use `cover_delete rule, present` with the step equation and table lookup. It checks nested function calls on each row using the expression laws in `Resolved.CallSafety`. For example, its ABS input condition excludes the minimum signed integer, and JSON validation with default flags accepts every SQL value. Supply clock and counter facts in scope. For a partial function, you can tag a proof that the call succeeds on its arguments with `delete_row_fact`. The same proof applies on either side of a comparison. Complex DELETE fixtures can need a higher `maxHeartbeats`. `sql_run` can reach its time limit ([#359](https://github.com/vihren-dev/belay/issues/359)). |
 | A read kept by `ADD COLUMN` and an `UPDATE` that fills the column | `DerivedColumnMigration.preserves_of_check` and `preserves_of_check_forall`: `#sql_check` and `sql_auto` apply these laws with a kernel check on the schema. The general law `queryPreserves` takes facts that the agent proves by hand. |
 | A read kept by a table rebuild | Apply `KeptRead.preserves_of_check` with the table name and the reference read. The README sessions proof is one application in [`RebuildKeeps.lean`](../../examples/table-rebuild/Proof/RebuildKeeps.lean). |
 | `M succeeds on shop` | For `ADD COLUMN` and an `UPDATE` that fills the column, `#sql_check` and `sql_auto` apply `DerivedColumnMigration.succeeds_of_check`. For a script certified from its schema, apply `Script.succeeds_of_schema`. A mixed script supplies proofs for its remaining statements, as in [`RebuildSucceeds.lean`](../../examples/table-rebuild/Proof/RebuildSucceeds.lean). |
@@ -173,6 +173,23 @@ the claim with `on shop`. The form without it,
 claim is false: on a database where `customers` has a trigger that deletes the
 rows after an update, the migration empties the table. No proof of it exists,
 so its answer stays `unknown`.
+
+To compare the last output of two SQL scripts, open the notation scope and write the scripts in execution order.
+
+```lean
+open scoped Belay.Sqlite.LastOutput
+
+-- Delete orders with a NULL customer, then read the big orders.
+-- The reference SELECT filters for both conditions on the original database.
+theorem delete_last : deleteScript; bigScript ~ referenceScript on shop := by sql_run
+```
+
+Both sides start from the same database with the shop catalog and the same complete
+environment. Their actual last outputs must match, including row order and duplicates.
+Each last output permitted on either side must also be permitted on the other.
+An earlier SQL error can be followed by a successful query. For example, if an
+overflowing `abs` reports an error and the next statement runs `SELECT 7`,
+the last output is the row containing 7.
 
 ## Three checks of the agent's work
 

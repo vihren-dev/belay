@@ -1,0 +1,101 @@
+{
+  "caller": "codex",
+  "commit": "9352be1a11113336329797b1e8e010d76bc1754a",
+  "date": "2026-11-26T10:54:10+00:00",
+  "exit": 1,
+  "files": [
+    "docs/guide/agents.md",
+    "packages/belay/Belay/Sqlite/Programs/Automation/DeleteCoverage.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/PlainDeleteCoverage.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/CallSafety.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "reviews/20261126T103003Z-b0c520d2/resolution-1-20261126T103015Z.json",
+    "reviews/20261126T103003Z-b0c520d2/review.json",
+    "reviews/20261126T103026Z-2cfd8012/review.json",
+    "tests/surface/Programs/Tests/DeleteCoverageCases.lean",
+    "tests/surface_select_sources_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261126T105410Z-9352be1a#1",
+      "line": 23,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/CallSafety.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The docstring of `scalarFault` says how to use the law but does not restate it: the assumptions (`f ≠ .iif`, the argument fault is `.none`, the call `Succeeds` on the evaluated arguments) and the conclusion (the fault of `Expr.scalar f args` is `.none`) are absent. Fix: restate the statement with one item for each assumption and the conclusion, with checked `{name}` references."
+    },
+    {
+      "id": "20261126T105410Z-9352be1a#2",
+      "line": 32,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/CallSafety.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The docstring of `jsonFault` describes the argument format and the proof, but does not state that a `.none` argument fault and a successful `Json.apply f` on the zipped values and subtype flags give a `.none` fault for `Expr.json f args`. Fix: restate the assumptions and the conclusion in plain words before the proof sketch."
+    },
+    {
+      "id": "20261126T105410Z-9352be1a#3",
+      "line": 39,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/CallSafety.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The docstring of `succeedsOk` (\"Specific result values are immaterial to coverage\") does not say what the formula says: for each value `v`, `Except.ok v` equals `.ok w` for some `w`. Fix: restate the formula, for example \"Each successful result `.ok v` is a returned value, for every `v`\"."
+    },
+    {
+      "id": "20261126T105410Z-9352be1a#4",
+      "line": 49,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/PlainDeleteCoverage.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The docstring of `extractSucceeds` (\"Expose the extraction contract ...\") does not restate the statement: if `Json.extract value [.text path]` returns a value, then `Json.apply .extract` `Succeeds` on the two arguments with both subtype flags `false`. Fix: state the assumption, the conclusion and the `false` flags in plain words."
+    },
+    {
+      "id": "20261126T105410Z-9352be1a#5",
+      "line": 14,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/CallSafety.lean",
+      "rule": "R2",
+      "severity": "should",
+      "text": "The docstring of `callFault` omits two assumptions of the formula: the incoming fault is `.none`, and the classifier maps each `.ok` result to `.none`; the conclusion is that the joined fault is `.none`, not only that the call \"adds no fault\". Fix: name both assumptions and the conclusion."
+    },
+    {
+      "id": "20261126T105410Z-9352be1a#6",
+      "line": 42,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/CallSafety.lean",
+      "rule": "R2",
+      "severity": "should",
+      "text": "The docstrings of `compareFault`, `consFault` (line 49) and `dateFault` (line 63) say that the result \"inherits\" or \"joins\" the faults of its parts, but each formula covers only the case in which all part faults are `.none`. Fix: say \"if the fault of each part is `.none`, the fault of the whole is `.none`\", and that the formula says nothing about other faults."
+    },
+    {
+      "id": "20261126T105410Z-9352be1a#7",
+      "line": 26,
+      "path": "packages/belay/Belay/Sqlite/Programs/Automation/DeleteCoverage.lean",
+      "rule": "R11",
+      "severity": "should",
+      "text": "The new `iifFault` and `dateFault` branches of `solveDeleteCalls` (lines 26 and 29) have no fixture: no DELETE in `tests/surface/Programs/Tests/DeleteCoverageCases.lean` has an `iif` call or a date function in its filter, so the tests pass without these branches. Fix: add one covered DELETE fixture with `iif(...)` and one with a date function such as `date(amount)`, or remove the two branches and their laws."
+    }
+  ],
+  "id": "20261126T105410Z-9352be1a",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

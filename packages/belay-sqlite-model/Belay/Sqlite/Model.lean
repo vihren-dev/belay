@@ -1,6 +1,9 @@
 import Belay.Sqlite.Model.Programs.Scripts.QueryRule
 import Belay.Sqlite.Model.Programs.Scripts.CreateObjectRules
 import Belay.Sqlite.Model.Programs.Scripts.AddColumnRule
+import Belay.Sqlite.Model.Programs.Scripts.PlainDeleteCoverage
+import Belay.Sqlite.Model.Queries.Evaluation.JsonCallSafety
+import Belay.Sqlite.Model.Queries.Evaluation.ScalarCallSafety
 import Belay.Sqlite.Model.Queries.Evaluation.NormalFormLaws
 import Belay.Sqlite.Model.Programs.Scripts.CreatedTables
 import Belay.Sqlite.Model.Tooling.Counterexamples.ForeignKeyActionCoverage

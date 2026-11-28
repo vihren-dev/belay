@@ -1,3 +1,5 @@
+import Belay.Sqlite.Model.Queries.Evaluation.CorrelatedSubqueryRun
+import Belay.Sqlite.Model.Queries.Evaluation.RowFilter
 import Belay.Sqlite.Model.Schema.Dispatch.TwoStateNotExistsExcept
 import Belay.Sqlite.Model.Schema.Writes.PlainInsertRows
 import Belay.Sqlite.Model.Schema.ForeignKeys.ForeignKeyLookupRemoval
@@ -7,31 +9,37 @@ set_option doc.verso true
 
 /-! The rows of the two terms of {lit}`SELECT … FROM before.t WHERE p EXCEPT SELECT … FROM t` over a table and the
 table that a {lit}`DELETE` leaves (ADR 0017, S6). The first term reads the rows of the table before the delete for
-which {lit}`p` is true; the second reads every row of the table after it. When {lit}`p` is true for a row only if
-the delete does not select the row, the second term has every row of the first. If the first column is the rowid
+which {lit}`p` is true; the second reads every row of the table after it. This file characterizes which rows kept by
+the first predicate survive the delete. {name}`Belay.Sqlite.Model.Resolved.project_selected_subset` carries the inclusion
+to the projected results of the two terms. If the first column is the rowid
 alias, the rows of the first term are identical where they compare equal. -/
 
 namespace Belay.Sqlite.Model
 
-/-- For every table, delete filter and context of the delete, condition and columns of the first term, and context of
-the values: when the condition is true for a row only if the filter is not true for it, every result of the first term
-over the table is a result of the second term over the table that the delete leaves. In plain words: a row that the
-check keeps is a row that the delete keeps. Proof sketch: a result comes from a scanned row with a true condition; the
-filter is not true for that row, so {name}`LiteralData.deleted` keeps it, and the second term outputs the same columns
-of it. -/
-theorem Resolved.notExistsExcept_subset (position : Nat) (condition : Resolved.Expr) (columns : List Resolved.Expr)
-    (names : List String) (table : Table) (filter : Resolved.Expr) (deleteContext context : Resolved.EvalContext)
-    (complement : ∀ row ∈ table.rows, Resolved.truthy (condition.eval context row.values) = true →
-      Resolved.truthy (filter.eval deleteContext row.values) = false) :
-    ∀ output ∈ (Resolved.initialTerm position condition columns names).results context (Resolved.sourceRows table),
-      output ∈ (Resolved.currentTerm position columns names).results context
-        (Resolved.sourceRows (LiteralData.deleted deleteContext table (some filter))) := by
-  intro output member
-  obtain ⟨cells, scanned, kept, rfl⟩ := (Resolved.initialTerm_mem_results _ _ _ _ _ _ _).1 member
-  obtain ⟨row, inTable, rfl⟩ := (mem_sourceRows_iff table cells).1 scanned
-  refine (Resolved.currentTerm_mem_results _ _ _ _ _ _).2 ⟨row.values, (mem_sourceRows_iff _ _).2 ⟨row, ?_, rfl⟩, rfl⟩
-  simp only [LiteralData.deleted, List.mem_filter, LiteralData.selected, Option.all_some, Bool.not_eq_true']
-  exact ⟨inTable, complement row inTable kept⟩
+/-- For every table, evaluation context and optional DELETE predicate, scanning the table
+produced by {name}`LiteralData.deleted` gives a permutation of the original rows for which
+{name}`Resolved.conditionKeeps` is false. A false or NULL predicate keeps that row in the table.
+Omitting the predicate deletes every row. Proof sketch: project the row values in
+{name}`Table.scan_filterRows` and move the filter through that projection. -/
+theorem Resolved.sourceRows_deleted (table : Table) (ctx : Resolved.EvalContext) (p : Option Resolved.Expr) :
+    (sourceRows (LiteralData.deleted ctx table p)).Perm
+      ((sourceRows table).filter fun row => !(conditionKeeps p ctx row)) := by
+  simpa only [sourceRows, List.filter_map, Function.comp_def, conditionKeeps,
+    LiteralData.selected, LiteralData.deleted, Table.filterRows] using
+    (table.scan_filterRows (fun r => !LiteralData.selected ctx p r)).map Row.values
+
+/-- For every table, keep predicate, context and optional DELETE filter, every value in the
+original scan for which the keep predicate is true occurs after the delete exactly when the keep
+predicate and the DELETE filter are disjoint on that scan ({name}`RowFilter.DisjointOn`).
+With no DELETE filter, this requires the keep predicate to be false for all rows in the scan.
+Proof sketch: {name}`Resolved.sourceRows_deleted`
+turns membership after the delete into membership in the filtered scan. -/
+theorem Resolved.selected_subset_deleted_iff {table : Table} {ctx : Resolved.EvalContext}
+    {filter : Option Resolved.Expr} {keep : List Value → Bool} :
+    (sourceRows table).filter keep ⊆ sourceRows (LiteralData.deleted ctx table filter) ↔
+      RowFilter.DisjointOn (sourceRows table) keep (conditionKeeps filter ctx) := by
+  rw [RowFilter.disjointOn_iff_impliesOn_complement, RowFilter.impliesOn_iff_subset]
+  exact forall_congr' fun _ => imp_congr_right fun _ => (sourceRows_deleted table ctx filter).mem_iff
 
 /-- For every table with distinct rowids whose rowid alias is the first column, every context, condition, and columns
 and collations that both start with the first column: no two results of the first term over the table compare equal

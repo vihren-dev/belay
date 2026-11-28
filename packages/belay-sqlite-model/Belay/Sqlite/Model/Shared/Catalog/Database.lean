@@ -17,6 +17,11 @@ structure Table where
   rows : List Row
   deriving Repr, DecidableEq
 
+/-- Keep the stored rows that satisfy the predicate, in their original order and with the
+same table shape. For example, {lean}`table.filterRows (fun _ => false)` empties the table. -/
+def Table.filterRows (table : Table) (keep : Row → Bool) : Table :=
+  { table with rows := table.rows.filter keep }
+
 /-- The schema and the stored rows. {lit}`rows` has one entry for each catalog object,
 at the object's position; indexes, views and triggers have no rows. {lean}`({} : Database)` is the
 empty database. -/

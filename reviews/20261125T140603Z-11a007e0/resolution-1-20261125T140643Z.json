@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-25T14:06:43+00:00",
+  "finding": "20261125T140603Z-11a007e0#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The model law also preserves the transaction snapshot and pragma settings for arbitrary writes. Schema-only SELECT resolution does not subsume that guarantee."
+}

@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-27T20:42:58+00:00",
+  "finding": "20261127T204248Z-23230b88#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The sql quotation takes Lean arguments in first-appearance order. On the right ?2 appears before ?1, so the quotation elaborates to (fun p2 p1 => ...withValues [[p1, p2]]) hi lo, which binds slot 1 to lo and slot 2 to hi. The compiled SELECT fixture passes, including the kernel-checked theorem for all lo and hi. Swapping the arguments as suggested was tested and leaves an unsolved goal."
+}
