@@ -57,3 +57,9 @@ Relevant sources: `packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Executi
   full-scope line estimates; the survey describes `NativeOutput.normalRows` without groups; this
   file says which inputs of the Nix build changed. No input of the Nix derivation changed.
   Tests: `tests/docs_test.py`.
+- 2026-11-28: review 20261128T142025Z-cba3cd97 (2 must), both fixed: `unmodeled` ends the run
+  before `query` gives a value; the line budget counts from the revision before the experiment
+  (`1fb455ac` on main), and the decrease from the revision with the experiment includes the
+  change of the tests. No input of the Nix derivation changed. Tests: `tests/docs_test.py`.
+  The same commit corrects the reason why slice 1 deletes `Bags/` (it imports only the Lean core
+  library) and rewraps long lines.

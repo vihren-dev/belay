@@ -283,10 +283,10 @@ decidable when the property is. The new claims are:
 - **Programs.** `query` changes only for the outputs that return rows. For `Output.rows` and
   `Output.oneOf`, it gives one list that the output permits: the groups of the first result in
   the order of `Output.ofResults`, in order, each group in normal form. Today `query` gives the
-  first listed result. For `Output.done` and `unmodeled`, it gives no rows, and for an error,
-  the error code, as today. `single` applies `singleValue` to the value of `query`, as today. So
-  a program that `query` runs can depend on an order that SQLite does not promise, as it can
-  today. A claim that holds for each order uses `returnsLists`, not `query`.
+  first listed result. As today, `done` gives `.ok []`, an error gives `.error code`, and
+  `unmodeled` ends the run before a program gets a value. `single` applies `singleValue` to the
+  value of `query`, as today. So a program that `query` runs can depend on an order that SQLite
+  does not promise, as it can today. A claim that holds for each order uses `returnsLists`, not `query`.
 - The bridges from `∀ result ∈ bound.possibleResults …` to claims, `OutputChoice`, `Succeeds`,
   `sql_select` and `sql_run` read ranked results.
 
@@ -307,10 +307,10 @@ Slice 2 is large, because a change of the type of `Output` breaks all its caller
 the project keeps no compatibility path. Each commit of the slice builds.
 
 **The experiment.** The findings, the probes and their script stay in `experiments/bag-results/`
-as the evidence of this ADR; the probes need only native SQLite. The Lean files of the
-experiment depend on code that the slices change. Slice 1 deletes `Bags/`, which becomes the
-module. Slice 2 deletes `CurrentOutputs.lean`, which its model test of P0 replaces, and keeps
-only the probes and the kernel cost in the experiment's Nix build. The findings then name the
+as the evidence of this ADR; the probes need only native SQLite. Slice 1 deletes `Bags/`,
+which becomes the module. `CurrentOutputs.lean` reads the outputs that slice 2 changes, so
+slice 2 deletes it, its model test of P0 replaces it, and the experiment's Nix build keeps only
+the probes and the kernel cost. The findings then name the
 revision at which `nix-build experiments/bag-results/default.nix` replays all of the evidence.
 
 ### D9. What each slice shows
@@ -344,16 +344,18 @@ Code lines are the `Code` field of scc 3.7.0, the counter of the simplification 
   lines of the packages after slice 2, plus the change of the tests, which slice 2 measures.
   Laws of the model that sort today can become shorter with the module, but the ADR does not
   count on that. Slice 2 records the measured result.
-- **Full scope.** The goal also counts the experiment. This ADR adds its 1,246 code lines, and
-  the slices delete them. So from the revision before this ADR to the end of slice 2, the full
-  scope grows by the same 750 to 1,000 lines and the change of the tests: about 1% of the last
-  recorded count of the goal (98,829 lines, ADR 0033). From the revision with this ADR, it
-  shrinks by about 250 to 500 lines. The line budget (owner decision 5) is the growth from the
-  revision before this ADR, because the Lean files of the experiment are temporary.
+- **Full scope.** The goal also counts the experiment. Its 1,246 code lines come in the pull
+  request of this ADR, before the ADR, and the slices delete them. So from the revision before
+  the experiment (`1fb455ac` on main) to the end of slice 2, the full scope grows by the same
+  750 to 1,000 lines and the change of the tests: about 1% of the last recorded count of the
+  goal (98,829 lines, ADR 0033). From the revision with the experiment, it shrinks by about 250
+  to 500 lines, plus the change of the tests. The line budget (owner decision 5) is the growth
+  from the revision before the experiment, because the Lean files of the experiment are
+  temporary.
 
-The increase is not temporary, because the module stays, and it moves the project away from the
-limit of the goal. The ADR recommends it, because the module gives the meaning of results that
-the model states today only through normal forms (owner decision 5).
+The increase is not temporary, because the module stays, and it moves the count further from
+the limit of the goal (45,000 lines). The ADR recommends it, because the module gives the
+meaning of results that the model states today only through normal forms (owner decision 5).
 
 Capability groups of the simplification goal:
 
@@ -429,7 +431,8 @@ it. A change would change predictions and verdicts, for no gain in the meaning o
    restated on bags, and S04 and S06 count as retained (D10, recommended), or they count as a
    loss that the owner approves.
 5. **Line budget.** Accept a net increase of the goal's full scope of about 750 to 1,000 code
-   lines and the change of the tests, from the revision before this ADR to the end of slice 2
-   (D10, recommended), or integrate a smaller module first: for example, without the uniqueness of
-   the canonical form (`CanonicalUnique.lean`, 123 code lines), which only the equivalence of
-   outputs (D6) needs, and add it with the work on issue 489.
+   lines and the change of the tests, from the revision before the experiment (`1fb455ac` on
+   main) to the end of slice 2 (D10, recommended), or integrate a smaller module first: for
+   example, without the uniqueness of the canonical form (`CanonicalUnique.lean`, 123 code
+   lines), which only the equivalence of outputs (D6) needs, and add it with the work on
+   issue 489.
