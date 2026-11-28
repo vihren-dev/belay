@@ -104,8 +104,9 @@ Public declarations whose types read rows as a list:
   not observable: nested window").
 - The second Lean path (`classifyCase`, used by `conformance/model_check.py` and the mutant
   measurement) has the same comparison in `Outputs.lean`. `NativeOutput.fits`
-  (`PossibleOutputs.lean`) checks that the native rows, with each native tie group in normal
-  form, are one of the model's possible results; one match is sufficient, and a statement for
+  (`PossibleOutputs.lean`) checks that the native rows are one of the model's possible results,
+  after `NativeOutput.normalRows` puts them in normal form: each native tie group when the event
+  records groups, and all rows together when it does not; one match is sufficient, and a statement for
   which the model gives no list of results passes.
 - `oneOf` never reaches the judge. `integrity/judge.lock.json` locks the judge and the oracle.
 - The corpora: 59 corpora in `judge/claims.json`, 193 `.jsonl.gz` files, 7,868 cases. Events

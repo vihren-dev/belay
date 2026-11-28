@@ -49,4 +49,11 @@ Relevant sources: `packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Executi
   `query` and `single` keep their contracts, one task file for two slices with the documentation
   in the same commit, the experiment's evidence stays, the P0 expectation, the full line counts,
   the P7 row, the two normal-form laws, the `outputJson` count and `NativeOutput.fits`. Only
-  Markdown files changed, so the Nix build above stays the evidence. Tests: `tests/docs_test.py`.
+  No input of the experiment's Nix derivation changed (the commit changes Markdown files and adds
+  review records), so the Nix build above stays the evidence. Tests: `tests/docs_test.py`.
+- 2026-11-28: review 20261128T141746Z-f2863578 (3 must, 2 should), all fixed: ORDER BY has the
+  list enumeration `rankLists` with its law for `rank`, which `possibleResults` uses; `query`
+  changes only for outputs with rows; D10 and owner decision 5 give the package and the
+  full-scope line estimates; the survey describes `NativeOutput.normalRows` without groups; this
+  file says which inputs of the Nix build changed. No input of the Nix derivation changed.
+  Tests: `tests/docs_test.py`.

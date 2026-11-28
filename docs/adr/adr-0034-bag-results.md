@@ -184,12 +184,15 @@ boundary for less supporting code (owner decision 1).
 The module has the definitions and laws of the prototype, without its examples (`Select.lean`
 and `Examples.lean`). The model also needs:
 
-- **Enumerations.** Each choice also has a function that lists its results. It takes a list of
-  the rows, not a bag: a list of results cannot be a function of the bag alone, because its
-  order would depend on the arrangement. For example, `subBagsOf n l : List (Bag α)` lists the
-  results of LIMIT `n` on the rows of `l`, with the membership law
-  `c ∈ subBagsOf n l ↔ (Bag.ofList l).take n c`. The windows of ranked rows and the rows that
-  `distinct` can keep have such enumerations too. The model computes with them on the lists of
+- **Enumerations.** Each choice also has a function that computes its results. It takes a list
+  of the rows, not a bag: a list of results cannot be a function of the bag alone, because its
+  order would depend on the arrangement. ORDER BY has `rankLists le l : List (List α)`, the
+  tie groups of `l` as lists (the sort of `l` by `le`, split into tie groups), with the law
+  `rank le (Bag.ofList l) = pure ((rankLists le l).map Bag.ofList)` for a total and transitive
+  `le`. LIMIT has `subBagsOf n l : List (Bag α)`, the results of LIMIT `n` on the rows of `l`,
+  with the membership law `c ∈ subBagsOf n l ↔ (Bag.ofList l).take n c`. The window of ranked
+  rows takes its groups as lists, and the rows that `distinct` can keep have an enumeration
+  too. The model computes with them on the lists of
   its evaluator, and the claims use the meaning through the membership laws. The order of an
   enumeration does not change an output, because `Output.ofResults` sorts the results (D5).
 - **Canonical form.** The prototype has it: `Ranked.canon` removes empty groups and splits a
@@ -231,11 +234,12 @@ arbitrary order; the model today puts them in normal form. `Output.done`, `error
 The evaluator does not change. `Query.possibleResults` starts, as today, from the records of the
 evaluator (`Query.uniqueRecords`: each result row with its sort keys), before the window and the
 projection. The sort keys can be absent from the result rows, so the ranking cannot start from
-`Query.results`. It ranks the records by the ORDER BY terms with the module's `rank`, takes the
-window enumeration of the ranked records, and maps each record to its result row
-(`Ranked.map`). `rank` needs a total and transitive order; the model has
-`compareSort_transCmp` for its order of sort keys. This replaces `tieGroups`, `choose`,
-`groupChoices`, `windowChoices` and the use of `normalForm` for results. The prediction for the judge stays the list of the evaluator
+`Query.results`. It computes the tie groups of the records by the ORDER BY terms as lists with
+`rankLists`, and the law of D3 connects them with `rank`. It takes the window enumeration of
+these groups and maps each record to its result row (`Ranked.map`). `rank` and `rankLists`
+need a total and transitive order; the model has `compareSort_transCmp` for its order of sort
+keys. This replaces `tieGroups`, `choose`, `groupChoices`, `windowChoices` and the use of
+`normalForm` for results. The prediction for the judge stays the list of the evaluator
 (`Query.results`), so the verdicts should not change; slice 2 checks this (D9). The second path
 of the conformance runner (`PossibleOutputs.lean`) checks that the native rows are a list that a
 possible result permits.
@@ -276,9 +280,11 @@ decidable when the property is. The new claims are:
   - `returnsBag rows`: each possible result has the bag of `rows`.
   - `returnsRows P`, `Holds` and `Empty` read the bag of rows: each row has `P`, a row exists,
     no row exists. Their meaning does not change.
-- **Programs.** `query` gives one list that the output permits: the groups of the first result
-  in the order of `Output.ofResults`, in order, each group in normal form. Today `query` gives
-  the first listed result. `single` applies `singleValue` to the value of `query`, as today. So
+- **Programs.** `query` changes only for the outputs that return rows. For `Output.rows` and
+  `Output.oneOf`, it gives one list that the output permits: the groups of the first result in
+  the order of `Output.ofResults`, in order, each group in normal form. Today `query` gives the
+  first listed result. For `Output.done` and `unmodeled`, it gives no rows, and for an error,
+  the error code, as today. `single` applies `singleValue` to the value of `query`, as today. So
   a program that `query` runs can depend on an order that SQLite does not promise, as it can
   today. A claim that holds for each order uses `returnsLists`, not `query`.
 - The bridges from `∀ result ∈ bound.possibleResults …` to claims, `OutputChoice`, `Succeeds`,
@@ -335,9 +341,15 @@ Code lines are the `Code` field of scc 3.7.0, the counter of the simplification 
 - **Net.** The module is about three times as large as the code that it replaces, because it
   proves general laws that the model does not have today, for example the canonical form and
   its uniqueness (208 code lines). The ADR expects a net increase of about 750 to 1,000 code
-  lines of the packages after slice 2, about 1% of the last recorded count of the goal (98,829
-  lines, ADR 0033). Laws of the model that sort today can become shorter with the module, but
-  the ADR does not count on that. Slice 2 records the measured result.
+  lines of the packages after slice 2, plus the change of the tests, which slice 2 measures.
+  Laws of the model that sort today can become shorter with the module, but the ADR does not
+  count on that. Slice 2 records the measured result.
+- **Full scope.** The goal also counts the experiment. This ADR adds its 1,246 code lines, and
+  the slices delete them. So from the revision before this ADR to the end of slice 2, the full
+  scope grows by the same 750 to 1,000 lines and the change of the tests: about 1% of the last
+  recorded count of the goal (98,829 lines, ADR 0033). From the revision with this ADR, it
+  shrinks by about 250 to 500 lines. The line budget (owner decision 5) is the growth from the
+  revision before this ADR, because the Lean files of the experiment are temporary.
 
 The increase is not temporary, because the module stays, and it moves the project away from the
 limit of the goal. The ADR recommends it, because the module gives the meaning of results that
@@ -416,7 +428,8 @@ it. A change would change predictions and verdicts, for no gain in the meaning o
 4. **Capability accounting.** Claims that a result without ORDER BY is one sorted list are
    restated on bags, and S04 and S06 count as retained (D10, recommended), or they count as a
    loss that the owner approves.
-5. **Line budget.** Accept a net increase of about 750 to 1,000 code lines for the module (D10,
-   recommended), or integrate a smaller module first: for example, without the uniqueness of
+5. **Line budget.** Accept a net increase of the goal's full scope of about 750 to 1,000 code
+   lines and the change of the tests, from the revision before this ADR to the end of slice 2
+   (D10, recommended), or integrate a smaller module first: for example, without the uniqueness of
    the canonical form (`CanonicalUnique.lean`, 123 code lines), which only the equivalence of
    outputs (D6) needs, and add it with the work on issue 489.
