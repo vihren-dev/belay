@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-28T13:50:20+00:00",
+  "finding": "20261128T135008Z-27cfc60e#2",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "the experiment is temporary research code that slice 2 of the ADR deletes; a test of its own diagnostics is supporting code without a present problem (CLAUDE.md, core and supporting code)"
+}

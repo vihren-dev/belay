@@ -21,7 +21,7 @@ in pkgs.runCommand "bag-results-experiments" {
   export LEAN_PATH="$PWD:${build.modelPackage}/.lake/build/lib/lean"
   mkdir -p "$out"
   python3 check.py "$out" ${native.sqlite}/bin/sqlite3
-  timeout 60 scc --no-gitignore --no-ignore --no-scc-ignore --format json \
+  timeout 60 scc --no-gitignore --no-ignore --no-scc-ignore --by-file --format json \
     $(find . -name '*.lean' -not -path './kernel-cost/*' | sort) > "$out/lines.json"
   printf '%s\n' '${build.modelPackage}' > "$out/model-path.txt"
   printf '%s\n' '${build.leanToolchain}' > "$out/toolchain-path.txt"

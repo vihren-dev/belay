@@ -25,3 +25,10 @@ Relevant sources: `packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Executi
   run, report only the forbidden axioms, name the deadlines, describe the cost baseline. Nix
   build `/nix/store/gn0rarazw0rkw2n42zpb6d4i2d0c9fxc-bag-results-experiments`: 4 audited
   theorems, probe output equal, kernel cost recorded.
+- 2026-11-28: the prototype `experiments/bag-results/Bags/` (17 files, 53 audited theorems,
+  1,225 code lines) and the findings `experiments/bag-results/README.md`. Review
+  20261128T135008Z-27cfc60e: the sqlite3 deadline has a name; two requests for tests of the
+  experiment's own scripts rejected. Nix build
+  `/nix/store/yrak1zfpf6m2ya1rincc2gjiw0gv5gsv-bag-results-experiments`: 18 Lean files compiled
+  without warnings, 57 audited theorems on the standard axioms, probe output equal, kernel cost
+  and per-file code lines recorded. Checks: this Nix build.

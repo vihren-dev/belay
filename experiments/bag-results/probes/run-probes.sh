@@ -8,10 +8,12 @@ set -euo pipefail
 here=$(dirname "$0")
 sqlite=${1:-sqlite3}
 expected_status=1
+# The deadline for sqlite3; the probes take less than one second.
+sqlite_deadline_seconds=60
 actual=$(mktemp)
 trap 'rm -f "$actual"' EXIT
 status=0
-timeout 60 "$sqlite" :memory: < "$here/probes.sql" > "$actual" 2>&1 || status=$?
+timeout "$sqlite_deadline_seconds" "$sqlite" :memory: < "$here/probes.sql" > "$actual" 2>&1 || status=$?
 if [ "$status" -ne "$expected_status" ]; then
   echo "run-probes: sqlite3 exited with status $status, expected $expected_status;" \
     "see the output below and check the probes for a hang or a crash." >&2
