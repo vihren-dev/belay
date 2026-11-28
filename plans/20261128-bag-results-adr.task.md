@@ -1,0 +1,81 @@
+# Experiments and ADR: query results as bags
+
+Created 2026-11-28.
+Status: [20261128-bag-results-adr.status.md](20261128-bag-results-adr.status.md).
+Discussion: [Belay issue 489](https://github.com/vihren-dev/belay/issues/489), comment of
+2026-11-28 ("Rethinking `A ~ B`").
+
+A query without ORDER BY gives rows in an order that SQLite does not promise. The model gives
+these rows as a list in a normal form (`Resolved.normalForm`). ORDER BY with ties gives each tie
+group in normal form, and the output (`Output.rows`) joins the groups into one list. Thus the
+output does not record which order SQLite promises. LIMIT and OFFSET without a total order give
+a choice of results (`Output.oneOf`), as a list of lists.
+
+The owner proposed on 2026-11-28 that the result of a query without ORDER BY is a bag (a
+multiset), that ORDER BY can make a list of it, and that LIMIT of a bag is a bag that is not
+determined: any sub-bag of the limit's size. A bag is then known by its rows, or as the result of
+a nondeterministic program whose inputs are bags.
+
+This task runs experiments on this idea and writes an ADR for its implementation. The owner
+expects two parts: a separate Lean module with all facts about bags, and then the integration of
+this module into the rest of the code, which replaces lists with bags in many places.
+
+## What is true when the task is done
+
+1. **Prototype of the bag module.** `experiments/bag-results/` holds a Lean prototype that uses
+   only the Lean core library and no model code. It defines nondeterministic results, bags,
+   ranked results (tie groups in order), the choices that LIMIT, OFFSET and DISTINCT make, ORDER
+   BY, and the equivalence of two results by the lists that an application can read. It proves,
+   with no `sorry`:
+   - the algebra of bags that reduction needs: filter, map, UNION ALL and product;
+   - the description of LIMIT as a sub-bag of a given size, and that its row count is
+     determined;
+   - that ORDER BY does not depend on the order of its input, and that a subquery reader cannot
+     see an ORDER BY without LIMIT;
+   - that OFFSET and LIMIT over ranked rows take a slice of each list that the rows permit;
+   - a canonical form of ranked rows: two ranked results permit the same lists exactly when
+     their canonical forms are equal;
+   - that for queries without ORDER BY, equivalence is equality of the sets of permitted bags.
+2. **Current behavior.** An experiment shows, with the pinned model package, that the model gives
+   equal outputs for a query without ORDER BY and for queries with ORDER BY, and shows with native
+   SQLite that an application reads different lists from them.
+3. **Cost of the representation.** An experiment measures the kernel cost of deciding the
+   equality of two bags of rows in two representations: a quotient of lists and the normal-form
+   list of the model.
+4. **SQLite behavior for the semantic decisions.** Native SQLite probes, with their recorded
+   results, show what SQLite does for: LIMIT without ORDER BY, ties of ORDER BY, the row that
+   DISTINCT keeps under a collation, the order of `group_concat`, the order of a sum of REAL
+   values, a CTE with LIMIT that a query reads two times, a correlated subquery with LIMIT, and
+   ORDER BY in a subquery.
+5. **Integration survey.** A record lists the code that depends on list-valued outputs: the model,
+   the surface package, the codec, the conformance harness, the judge and its corpora, tests and
+   documentation, with counts.
+6. **Findings.** `experiments/bag-results/README.md` gives the results and how to reproduce them.
+7. **ADR.** `docs/adr/adr-0034-bag-results.md` (status PROPOSED) decides the bag module, its
+   place and its interface, the integration and its slices, what each slice shows, and lists the
+   owner decisions.
+
+## Test suite
+
+- `nix-build experiments/bag-results/default.nix` builds every Lean file of the experiment
+  against the pinned toolchain and model package. It fails when a file has `sorry`, and it
+  records the axioms of each main theorem: only `propext`, `Classical.choice` and `Quot.sound`
+  are allowed.
+- The native probes run from one script with the pinned SQLite, and their output is recorded
+  next to the script.
+
+## Points to know
+
+- The model's tests decide outputs with `decide +kernel`. A quotient type has no derived
+  `DecidableEq`, and the kernel must reduce the decision procedure.
+- Ranked results with equal rows in separate groups permit the same lists, for example
+  `[{a}, {a}]` and `[{a, a}]`. A comparison by data needs the canonical form.
+- OFFSET and LIMIT can cut one tie group on both sides.
+- The model already enumerates the choices of LIMIT and OFFSET
+  (`Queries/Evaluation/PossibleResults.lean`, `Output.ofResults`).
+- A change of the output encoding can change the codec, the conformance harness and the judge.
+  A change of the judge or of a corpus needs its own pull request with the owner's approval
+  (ADR 0011).
+- The [simplification goal](../docs/development/lean-simplification-goal.md) limits maintained
+  Lean lines. The ADR estimates the net change.
+- A local result is not evidence. The findings cite the Nix build of the experiment.
