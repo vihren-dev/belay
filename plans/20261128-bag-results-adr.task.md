@@ -15,7 +15,8 @@ When every choice gives the same rows, the output is `Output.rows`.
 The owner proposed on 2026-11-28 that the result of a query without ORDER BY is a bag (a
 multiset), that ORDER BY can make a list of it, and that LIMIT of a bag is a bag that is not
 determined: any sub-bag of the limit's size. When fewer rows remain after OFFSET, the size is
-the number of the remaining rows. A bag is then known by its rows, or as the result of
+the number of the remaining rows. (SQLite treats a negative LIMIT as no limit and a negative
+OFFSET as 0.) A bag is then known by its rows, or as the result of
 a nondeterministic program whose inputs are bags.
 
 This task runs experiments on this idea and writes an ADR for its implementation. The owner
@@ -33,15 +34,21 @@ this module into the rest of the code, which replaces lists with bags in many pl
    - the description of LIMIT as a sub-bag of the rows that remain after OFFSET, and that its
      row count is determined: for a negative limit, which SQLite treats as no limit, the count is
      the number of remaining rows; otherwise it is the smaller of the limit and that number;
-   - that ORDER BY does not depend on the order of its input, and that a reader whose result
-     does not change when its input rows are permuted (for example IN or EXISTS) cannot see an
-     ORDER BY without LIMIT. Other readers can see the order: a scalar subquery reads its first
-     row, as LIMIT 1 does, and native SQLite keeps the order of a FROM subquery for the outer
-     query, for example for an outer `group_concat`;
-   - that OFFSET and LIMIT over ranked rows take a slice of each list that the rows permit;
+   - that the ranked result of ORDER BY (its tie groups in order) does not depend on the order
+     of its input, when the sort keys are total functions of the row, as in the prototype; and
+     that a reader that is a function of the bag of rows cannot see an ORDER BY without LIMIT.
+     In SQLite a sort key can fail, for example with an integer overflow, and then ORDER BY
+     changes the result from rows to an error. The ADR says how the model treats such errors
+     and which SQLite readers are functions of the bag. Other readers can see the order: a
+     scalar subquery reads its first row, as LIMIT 1 does, and in the probes an outer
+     `group_concat` over a FROM subquery reads the order of the subquery. In a join, native
+     SQLite can ignore the ORDER BY of a FROM subquery;
+   - that OFFSET and LIMIT over ranked rows take a slice of each list that the rows permit,
+     with a negative OFFSET as 0 and a negative LIMIT as no limit;
    - a canonical form of ranked rows: two ranked results permit the same lists exactly when
      their canonical forms are equal;
-   - that for queries without ORDER BY, equivalence is equality of the sets of permitted bags.
+   - that for two nondeterministic results whose every value is one tie group (a bag),
+     equivalence is equality of the sets of permitted bags.
 2. **Current behavior.** An experiment shows, with the pinned model package, that the model gives
    equal outputs for a query without ORDER BY and for queries with ORDER BY, and shows with native
    SQLite that an application reads different lists from them.
@@ -52,7 +59,8 @@ this module into the rest of the code, which replaces lists with bags in many pl
    results, show what SQLite does for: LIMIT without ORDER BY, ties of ORDER BY, the row that
    DISTINCT keeps under a collation, the order of `group_concat`, the order of a sum of REAL
    values, a CTE with LIMIT that a query reads two times, a correlated subquery with LIMIT, and
-   ORDER BY in a subquery.
+   ORDER BY in a subquery. The probes show what one pinned build does for one plan or for a few
+   plans; they do not show what SQLite promises.
 5. **Integration survey.** A record lists the code that depends on list-valued outputs: the model,
    the surface package, the codec, the conformance harness, the judge and its corpora, tests and
    documentation, with counts.
@@ -72,8 +80,10 @@ this module into the rest of the code, which replaces lists with bags in many pl
 
 ## Points to know
 
-- The model's tests decide outputs with `decide +kernel`. A quotient type has no derived
-  `DecidableEq`, and the kernel must reduce the decision procedure.
+- Many tests of the model decide outputs with `decide +kernel`, for example
+  `Schema/Dispatch/PossibleResultsExamples.lean`. Equality of two bags as a quotient is
+  decidable with `Quotient.decidableEq` and the decision of `List.Perm`, and `decide +kernel`
+  must reduce that procedure in the kernel.
 - Ranked results with equal rows in separate groups permit the same lists, for example
   `[{a}, {a}]` and `[{a, a}]`. A comparison by data needs the canonical form.
 - OFFSET and LIMIT can cut one tie group on both sides.

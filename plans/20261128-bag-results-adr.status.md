@@ -14,3 +14,4 @@ Relevant sources: `packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Executi
 - 2026-11-28: task and status files.
 - 2026-11-28: review round 2 of the task: negative LIMIT, the order of a FROM subquery, and the
   line count of the prototype.
+- 2026-11-28: review round 3 of the task: sort keys that fail, and FROM subqueries in a join.
