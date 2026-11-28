@@ -171,15 +171,18 @@ prototype `Bags/` has 1,225 in 17 files. The largest files are `CanonicalUnique.
 `SqliteWindow.lean` (110), `Rank.lean` (102) and `TieGroups.lean` (102).
 
 The simplification goal counts the code under `experiments/` as maintained code. Slice 1 of the
-ADR moves the module into the model package and deletes this copy, and slice 2 deletes the
-directory.
+ADR moves the prototype into the model package as the bag module and deletes `Bags/`. Slice 2
+deletes `CurrentOutputs.lean`, which a model test of P0 replaces, and keeps only the probes and
+the kernel cost in this Nix build. The findings, the probes and their script stay as the
+evidence of the ADR (ADR 0034, D8), and the findings then name the revision at which the Nix
+build replays all of the evidence.
 
 ## Limits
 
 - The probes show one build and one or two plans for each query; they do not show what SQLite
   promises.
 - The prototype uses Lean's `List.Perm` and its quotient, and it proves the laws for any type of
-  rows. It does not connect to the model's `Value` type or to its evaluator; slice 1 of the ADR
-  does that for the enumerations.
+  rows. It does not connect to the model's `Value` type or to its evaluator; slice 2 of the ADR
+  does that.
 - The kernel cost is the cost of one equality of two bags. A model test that enumerates many
   choices decides many such equalities.

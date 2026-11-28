@@ -45,7 +45,7 @@ show what SQLite promises.
 | P3 | `ORDER BY p` with a tie, rowid scan and index on `(p, name)` | `bob, ada, cy`, then `ada, bob, cy` |
 | P4, P5 | `DISTINCT name COLLATE NOCASE` and `GROUP BY` over `a`, `A` | `a`, then `A`: the plan selects the row that stays |
 | P6 | `group_concat(name)` | `bob,ada,cy`, then `ada,bob,cy` |
-| P7 | `sum`, `total`, `avg` of `1e308, 1e308, -1e308` | `Inf`, then `1.0e+308` |
+| P7 | `sum`, `total`, `avg` of `1e308, 1e308, -1e308` | `Inf` for all three, then `1.0e+308`, `1.0e+308` and `3.33333333333333e+307` |
 | P16 | `sum` of `MAX_INT, 1, -1` | `integer overflow`, then `9223372036854775807` |
 | P9 | a CTE with LIMIT that the query reads two times, with each materialization hint | one materialization in all three forms |
 | P10 | a scalar subquery with LIMIT, uncorrelated and correlated | evaluated once; evaluated for each outer row |
@@ -73,8 +73,10 @@ the first two. So:
   application that reads the rows in order can get `bob, ada`. The documentation says that the
   rows are in normal form, so the claim is about the normal form, not about the rows that the
   application reads.
-- Laws about results state facts about sorted lists. The one law that connects the normal form
-  with permutations is `normalForm_eq_iff_perm`, and one test uses it.
+- Laws about results state facts about sorted lists. Two laws connect the normal form with
+  permutations: `normalForm_perm` (the normal form is a permutation of its rows), which the
+  window proofs use, and `normalForm_eq_iff_perm` (two normal forms are equal exactly when the
+  rows are permutations of each other), which one test uses.
 
 The model already refuses some results that depend on an order (`docs/semantic-subset.md`):
 
@@ -182,11 +184,14 @@ boundary for less supporting code (owner decision 1).
 The module has the definitions and laws of the prototype, without its examples (`Select.lean`
 and `Examples.lean`). The model also needs:
 
-- **Enumerations.** Each choice also has a function that lists its results:
-  `Bag.subBags n b : List (Bag α)` for `Bag.take`, the windows of ranked rows, and the rows that
-  `distinct` can keep. Each enumeration has a membership law: `c ∈ b.subBags n ↔ b.take n c`.
-  The model computes with the enumerations, and the claims use the meaning through the
-  membership laws.
+- **Enumerations.** Each choice also has a function that lists its results. It takes a list of
+  the rows, not a bag: a list of results cannot be a function of the bag alone, because its
+  order would depend on the arrangement. For example, `subBagsOf n l : List (Bag α)` lists the
+  results of LIMIT `n` on the rows of `l`, with the membership law
+  `c ∈ subBagsOf n l ↔ (Bag.ofList l).take n c`. The windows of ranked rows and the rows that
+  `distinct` can keep have such enumerations too. The model computes with them on the lists of
+  its evaluator, and the claims use the meaning through the membership laws. The order of an
+  enumeration does not change an output, because `Output.ofResults` sorts the results (D5).
 - **Canonical form.** The prototype has it: `Ranked.canon` removes empty groups and splits a
   group whose rows are all equal into groups of one row. Two ranked results permit the same
   lists exactly when their canonical forms are equal. The model uses it for `Output.ofResults`
@@ -215,14 +220,22 @@ checked SQL documentation blocks.
 - `Output.oneOf (results : List (Ranked (List Value)))`: two or more ranked results with
   different canonical forms.
 
-`Output.ofResults` takes the canonical form of each result and removes duplicates. The rows of
-RETURNING are one bag, because the SQLite documentation gives them an arbitrary order; the
-model today puts them in normal form. `Output.done`, `error` and `unmodeled` do not change.
+`Output.ofResults` takes the canonical form of each result, removes duplicates, and sorts the
+results by a fixed order: group by group, each group by its normal form (`Resolved.normalForm`
+through `Quotient.lift`) with `compareResults`, and a ranking that is a prefix of another one
+first. So the output does not depend on the order in which the model finds the results, as
+today. The rows of RETURNING are one bag, because the SQLite documentation gives them an
+arbitrary order; the model today puts them in normal form. `Output.done`, `error` and
+`unmodeled` do not change.
 
-The evaluator does not change. It gives the rows in the order of its plan, and
-`Query.possibleResults` makes the ranked results from them with the module's `rank` and window
-enumeration. This replaces `tieGroups`, `choose`, `groupChoices`, `windowChoices` and the use of
-`normalForm` for results. The prediction for the judge stays the list of the evaluator
+The evaluator does not change. `Query.possibleResults` starts, as today, from the records of the
+evaluator (`Query.uniqueRecords`: each result row with its sort keys), before the window and the
+projection. The sort keys can be absent from the result rows, so the ranking cannot start from
+`Query.results`. It ranks the records by the ORDER BY terms with the module's `rank`, takes the
+window enumeration of the ranked records, and maps each record to its result row
+(`Ranked.map`). `rank` needs a total and transitive order; the model has
+`compareSort_transCmp` for its order of sort keys. This replaces `tieGroups`, `choose`,
+`groupChoices`, `windowChoices` and the use of `normalForm` for results. The prediction for the judge stays the list of the evaluator
 (`Query.results`), so the verdicts should not change; slice 2 checks this (D9). The second path
 of the conformance runner (`PossibleOutputs.lean`) checks that the native rows are a list that a
 possible result permits.
@@ -263,9 +276,10 @@ decidable when the property is. The new claims are:
   - `returnsBag rows`: each possible result has the bag of `rows`.
   - `returnsRows P`, `Holds` and `Empty` read the bag of rows: each row has `P`, a row exists,
     no row exists. Their meaning does not change.
-- **Programs.** `query` and `single` give one list that the output permits: the groups of the
-  first result in order, each group in normal form. Today `query` gives the first listed result.
-  So a program that `query` runs can depend on an order that SQLite does not promise, as it can
+- **Programs.** `query` gives one list that the output permits: the groups of the first result
+  in the order of `Output.ofResults`, in order, each group in normal form. Today `query` gives
+  the first listed result. `single` applies `singleValue` to the value of `query`, as today. So
+  a program that `query` runs can depend on an order that SQLite does not promise, as it can
   today. A claim that holds for each order uses `returnsLists`, not `query`.
 - The bridges from `∀ result ∈ bound.possibleResults …` to claims, `OutputChoice`, `Succeeds`,
   `sql_select` and `sql_run` read ranked results.
@@ -276,17 +290,22 @@ list view is a helper over it (owner decision 3).
 
 ### D8. Slices
 
-Each slice has its own task file and status file.
+One task file and one status file cover the two slices.
 
 | Slice | Content |
 | --- | --- |
-| 1 | The bag module in the model package (D2, D3), from the prototype, with the import test. The experiment keeps its probes and `CurrentOutputs.lean`, and loses its copy of the module. No other code changes. |
-| 2 | `Output` and `Query.possibleResults` over ranked results (D5), RETURNING, `Output.Permits` and `Output.Equivalent` (D6), the claims (D7), and all callers in the model, the surface package, the conformance package and the tests. `CurrentOutputs.lean` becomes a test of the model that the three queries of P0 have different outputs, and the experiment directory is deleted. |
-| 3 | The documentation: `docs/semantic-subset.md`, the package README, the guide and the README examples that show outputs. |
+| 1 | The bag module in the model package (D2, D3), from the prototype, with the import test. No other code changes. |
+| 2 | `Output` and `Query.possibleResults` over ranked results (D5), RETURNING, `Output.Permits` and `Output.Equivalent` (D6), the claims (D7), and all callers in the model, the surface package, the conformance package and the tests. Each commit that changes what a user sees updates its documentation in the same commit: `docs/semantic-subset.md`, the package README, the guide and the README examples that show outputs. A model test states the outputs of the three queries of P0. |
 
 Slice 2 is large, because a change of the type of `Output` breaks all its callers at once and
-the project keeps no compatibility path. Its task file orders the work by package, and each
-commit builds.
+the project keeps no compatibility path. Each commit of the slice builds.
+
+**The experiment.** The findings, the probes and their script stay in `experiments/bag-results/`
+as the evidence of this ADR; the probes need only native SQLite. The Lean files of the
+experiment depend on code that the slices change. Slice 1 deletes `Bags/`, which becomes the
+module. Slice 2 deletes `CurrentOutputs.lean`, which its model test of P0 replaces, and keeps
+only the probes and the kernel cost in the experiment's Nix build. The findings then name the
+revision at which `nix-build experiments/bag-results/default.nix` replays all of the evidence.
 
 ### D9. What each slice shows
 
@@ -294,13 +313,15 @@ commit builds.
   standard axioms. The import test passes. The verdict of each corpus is the same as at the start
   of the slice.
 - **Slice 2.** The verdict of each corpus is the same as at the start of the slice, because the
-  prediction does not change. The model test of P0 shows different outputs. The tests that
-  claimed an order for a result without ORDER BY are either restated as claims on bags or
-  removed with the reason in the status file. The status file lists them.
-- **Slice 3.** The checked documentation builds.
+  prediction does not change. The model test of P0 shows that the query without ORDER BY and the
+  query with the tied `ORDER BY p` have equal outputs, one group `{ada, bob}`, and that the query
+  with `ORDER BY name` has a different output, two groups. The tests that claimed an order for a
+  result without ORDER BY are either restated as claims on bags or removed with the reason in the
+  status file. The status file lists them. The checked documentation builds.
 
-Each slice records the code lines of the packages and of the tests with the counter of the
-simplification goal, at its start and end revisions.
+Each slice records the code lines with the counter of the simplification goal, at its start and
+end revisions: the full total of the goal's scope, and the packages, the tests and the other
+maintained Lean code, such as the experiment, separately.
 
 ### D10. Line budget and capability effects
 

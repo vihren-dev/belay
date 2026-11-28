@@ -43,3 +43,10 @@ Relevant sources: `packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Executi
   `/nix/store/zhfh5aq45zr0qrzkcr5bmcy5y6hz7cci-bag-results-experiments`: 57 audited theorems on
   the standard axioms, probe output equal, kernel cost and 1,246 code lines; the findings and
   the ADR cite this build. Tests: `tests/docs_test.py` (links of the new documents).
+- 2026-11-28: review 20261128T141028Z-fd8f03f7 (11 must, 3 should), all fixed in the ADR, the
+  survey and the findings: enumerations take lists, `Output.ofResults` orders the results by
+  their groups in normal form, `possibleResults` ranks the records of `Query.uniqueRecords`,
+  `query` and `single` keep their contracts, one task file for two slices with the documentation
+  in the same commit, the experiment's evidence stays, the P0 expectation, the full line counts,
+  the P7 row, the two normal-form laws, the `outputJson` count and `NativeOutput.fits`. Only
+  Markdown files changed, so the Nix build above stays the evidence. Tests: `tests/docs_test.py`.

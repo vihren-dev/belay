@@ -86,9 +86,11 @@ Public declarations whose types read rows as a list:
 
 - The model codec has no codec for `Output`; it derives JSON for `Value` and `Row` only
   (`M/Frontend/Codecs/Codec.lean`).
-- Seven Lean test files under `tests/surface/` copy one `outputJson` function that writes
-  `rows` or `oneOf`. Seven Python tests read these rows and compare them as ordered lists with
-  native rows; they skip `oneOf`.
+- Six Lean test files under `tests/surface/` copy one `outputJson` function that writes
+  `rows` or `oneOf`. Six Python tests run them (`surface_application_test.py`,
+  `surface_derived_column_test.py`, `surface_rebuild_affinity_test.py`,
+  `surface_rebuild_test.py`, `surface_schema_script_test.py`, `surface_replay_test.py`), read
+  `rows` and compare them with native rows; none of them reads `oneOf`.
 - The predictions for the judge carry `StatementOutput` (`columns`, `rows`, `changes`), not
   `Output`. The prediction is the first pass of the model, in the order of `Query.results`.
 
@@ -101,8 +103,10 @@ Public declarations whose types read rows as a list:
   ORDER BY or LIMIT. A query with a LIMIT inside a subquery stops the capture ("tie structure
   not observable: nested window").
 - The second Lean path (`classifyCase`, used by `conformance/model_check.py` and the mutant
-  measurement) has the same comparison in `Outputs.lean`, and checks that each possible result
-  contains the normalized native rows (`PossibleOutputs.lean`).
+  measurement) has the same comparison in `Outputs.lean`. `NativeOutput.fits`
+  (`PossibleOutputs.lean`) checks that the native rows, with each native tie group in normal
+  form, are one of the model's possible results; one match is sufficient, and a statement for
+  which the model gives no list of results passes.
 - `oneOf` never reaches the judge. `integrity/judge.lock.json` locks the judge and the oracle.
 - The corpora: 59 corpora in `judge/claims.json`, 193 `.jsonl.gz` files, 7,868 cases. Events
   store native rows in SQLite's order and, for 867 events in 772 cases, native tie groups
