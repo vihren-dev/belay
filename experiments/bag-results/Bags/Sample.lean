@@ -5,8 +5,8 @@ import Bags.Bag
 
 A bag has no order. For a type with a total order, each bag has one sorted list of its rows:
 its sample. `Bag.sample` computes it from the bag. The model can use it to show a bag, to
-decide the equality of bags at the cost of a comparison of sorted lists, and to list the
-choices of a bag in a fixed order. The sample is not an order that SQLite promises: a claim
+decide the equality of two bags by the sort of a list of each and a comparison of the sorted
+lists, and to list the choices of a bag in a fixed order. The sample is not an order that SQLite promises: a claim
 about the sample is a claim about the sorted rows.
 
 The sort is the insertion sort of the model (`stableSort`), with the same laws. It uses only
@@ -149,7 +149,7 @@ theorem sample_eq_iff (o : SortOrder α) (b c : Bag α) : b.sample o = c.sample 
 #print axioms sample_eq_iff
 
 /-- The equality of bags, decided through their samples. A type with a sort order can use it
-as its instance, and the kernel then compares two sorted lists. -/
+as its instance. The kernel then sorts a list of each bag and compares the sorted lists. -/
 def decEqBySample [DecidableEq α] (o : SortOrder α) : DecidableEq (Bag α) := fun b c =>
   decidable_of_iff (b.sample o = c.sample o) (sample_eq_iff o b c)
 

@@ -112,6 +112,11 @@ only on `propext`, `Classical.choice` and `Quot.sound`.
 - `Bag α`, the quotient of lists by permutation, with `map`, `filter`, UNION ALL (`++`) and
   `product`, and their laws: for example `filter_append`, `append_comm` and `filter_product`.
   Equality of bags is decidable with `List.isPerm`.
+- `Bag.sample o b`, the sample of a bag: its rows sorted by a total, transitive and
+  antisymmetric order `o` (`SortOrder`), with the insertion sort of the model. Two bags are
+  equal if and only if their samples are equal (`sample_eq_iff`), so equality can also be
+  decided through the samples (`Bag.decEqBySample`). The sample is a sorted list, not an order
+  that SQLite promises.
 - `Bag.arrange b : ND (List α)`, the lists of the rows of `b` in each order. It is the one
   source of nondeterminism: each choice is a list function after an arrangement.
 - `Bag.take n`: the sub-bags whose size is the smaller of `n` and the size of the bag
@@ -135,19 +140,22 @@ The [findings](../../experiments/bag-results/README.md) list the theorems.
 ### Cost of a quotient in the kernel
 
 The Nix build of the experiment measured `decide +kernel` on two orders of the same rows of two
-integers, as a quotient (`Quotient.decidableEq` with the decision of `List.Perm`) and as normal
-forms. The times are the best of three runs, without the time of the imports and the
-definitions.
+integers in three ways: as a quotient with the decision of `List.Perm` (`Quotient.decidableEq`),
+as a quotient whose decision compares the samples of the two bags (their rows in the model's
+normal form, through `Quotient.lift`), and as normal-form lists. The times are the best of three
+runs, without the time of the imports and the definitions.
 
-| Rows | Quotient | Normal form |
-| ---: | ---: | ---: |
-| 10 | 0.03 s | 0.04 s |
-| 50 | 0.8 s | 0.6 s |
-| 100 | 3.3 s | 2.4 s |
-| 200 | 13.3 s | 9.1 s |
+| Rows | `List.Perm` | Samples | Normal form |
+| ---: | ---: | ---: | ---: |
+| 10 | 0.03 s | 0.04 s | 0.04 s |
+| 50 | 0.8 s | 0.7 s | 0.7 s |
+| 100 | 3.3 s | 2.5 s | 2.4 s |
+| 200 | 13.3 s | 9.4 s | 9.1 s |
 
-Both are quadratic. For 100 and 200 rows, the quotient costs about 1.4 to 1.5 times the normal
-form.
+All three are quadratic. For 100 and 200 rows, the decision by `List.Perm` costs about 1.4 times
+the normal form. The decision through samples costs the same as the normal form within 3%, the
+variation between builds: a quotient costs nothing extra in the kernel when its equality
+compares samples.
 
 ## Decision
 
@@ -192,9 +200,16 @@ and `Examples.lean`). The model also needs:
   `le`. LIMIT has `subBagsOf n l : List (Bag α)`, the results of LIMIT `n` on the rows of `l`,
   with the membership law `c ∈ subBagsOf n l ↔ (Bag.ofList l).take n c`. The window of ranked
   rows takes its groups as lists, and the rows that `distinct` can keep have an enumeration
-  too. The model computes with them on the lists of
-  its evaluator, and the claims use the meaning through the membership laws. The order of an
-  enumeration does not change an output, because `Output.ofResults` sorts the results (D5).
+  too. The model computes with them on the lists of its evaluator, and the claims use the
+  meaning through the membership laws. The order of an enumeration does not change an output,
+  because `Output.ofResults` sorts the results (D5). For a type with a sort order, an
+  enumeration can also take a bag through its sample, for example
+  `subBagsOf n (b.sample o)`: its order of results is then a function of the bag. The model
+  needs only the versions that take lists, because its evaluator gives lists.
+- **Sample.** The prototype has it (`Bag.sample`, `SortOrder`, `Bag.decEqBySample`), with the
+  insertion sort of the model and its laws (`stableSort`). The module takes the sort from the
+  prototype, and slice 2 replaces the model's copy of the sort and its laws with it, so the
+  sort exists once.
 - **Canonical form.** The prototype has it: `Ranked.canon` removes empty groups and splits a
   group whose rows are all equal into groups of one row. Two ranked results permit the same
   lists exactly when their canonical forms are equal. The model uses it for `Output.ofResults`
@@ -207,12 +222,21 @@ as an argument, for example the equivalence of `distinct` or the key order of `r
 ### D4. The representation of bags in the model
 
 Bags are the quotient `Bag`, not normal-form lists (owner decision 2). The laws of bags then
-come from the quotient, and no law needs a sort. `decide +kernel` costs about 1.4 to 1.5 times as
-much as for normal forms for 100 or more rows; for 10 rows, both take less than 0.04 seconds. Where
-the model must show one list, it takes the normal form of the bag through `Quotient.lift`, with
-`normalForm_eq_iff_perm` as the proof: `#eval` display (`OutputRepr`), the `outputJson`
-functions of the tests, `ToExpr` for the counterexample replay, and the text of each choice in
-checked SQL documentation blocks.
+come from the quotient, and no law needs a sort.
+
+The model uses the sample of a bag of rows with the order of `Resolved.compareRows`, the order
+of `Resolved.normalForm`. The sample of a bag is the normal form of each list of the bag. The
+model uses it in two ways:
+
+- **Equality.** The model declares `Bag.decEqBySample` as the instance for bags of rows, with a
+  higher priority than the decision by `List.Perm`. So `decide +kernel` costs the same as for
+  normal-form lists: 2.5 s instead of 3.3 s for 100 rows.
+- **One list to show.** `#eval` display (`OutputRepr`), the `outputJson` functions of the
+  tests, `ToExpr` for the counterexample replay, and the text of each choice in checked SQL
+  documentation blocks show the sample of each group.
+
+The sample is not an order that SQLite promises. The claims of D7 do not read it, and its
+docstring says that a claim about the sample is a claim about the sorted rows.
 
 ### D5. The output of a statement
 
@@ -224,10 +248,9 @@ checked SQL documentation blocks.
   different canonical forms.
 
 `Output.ofResults` takes the canonical form of each result, removes duplicates, and sorts the
-results by a fixed order: group by group, each group by its normal form (`Resolved.normalForm`
-through `Quotient.lift`) with `compareResults`, and a ranking that is a prefix of another one
-first. So the output does not depend on the order in which the model finds the results, as
-today. The rows of RETURNING are one bag, because the SQLite documentation gives them an
+results by a fixed order: group by group, each group by its sample (D4) with
+`compareResults`, and a ranking that is a prefix of another one first. So the output does not
+depend on the order in which the model finds the results, as today. The rows of RETURNING are one bag, because the SQLite documentation gives them an
 arbitrary order; the model today puts them in normal form. `Output.done`, `error` and
 `unmodeled` do not change.
 
@@ -282,11 +305,12 @@ decidable when the property is. The new claims are:
     no row exists. Their meaning does not change.
 - **Programs.** `query` changes only for the outputs that return rows. For `Output.rows` and
   `Output.oneOf`, it gives one list that the output permits: the groups of the first result in
-  the order of `Output.ofResults`, in order, each group in normal form. Today `query` gives the
+  the order of `Output.ofResults`, in order, each group as its sample (D4). Today `query` gives the
   first listed result. As today, `done` gives `.ok []`, an error gives `.error code`, and
   `unmodeled` ends the run before a program gets a value. `single` applies `singleValue` to the
   value of `query`, as today. So a program that `query` runs can depend on an order that SQLite
-  does not promise, as it can today. A claim that holds for each order uses `returnsLists`, not `query`.
+  does not promise, as it can today. A claim that holds for each order uses `returnsLists`, not
+  `query`.
 - The bridges from `∀ result ∈ bound.possibleResults …` to claims, `OutputChoice`, `Succeeds`,
   `sql_select` and `sql_run` read ranked results.
 
@@ -301,7 +325,7 @@ One task file and one status file cover the two slices.
 | Slice | Content |
 | --- | --- |
 | 1 | The bag module in the model package (D2, D3), from the prototype, with the import test. No other code changes. |
-| 2 | `Output` and `Query.possibleResults` over ranked results (D5), RETURNING, `Output.Permits` and `Output.Equivalent` (D6), the claims (D7), and all callers in the model, the surface package, the conformance package and the tests. Each commit that changes what a user sees updates its documentation in the same commit: `docs/semantic-subset.md`, the package README, the guide and the README examples that show outputs. A model test states the outputs of the three queries of P0. |
+| 2 | `Output` and `Query.possibleResults` over ranked results (D5), RETURNING, `Output.Permits` and `Output.Equivalent` (D6), the claims (D7), and all callers in the model, the surface package, the conformance package and the tests. Slice 2 also replaces the model's insertion sort and its laws with the module's (D3). Each commit that changes what a user sees updates its documentation in the same commit: `docs/semantic-subset.md`, the package README, the guide and the README examples that show outputs. A model test states the outputs of the three queries of P0. |
 
 Slice 2 is large, because a change of the type of `Output` breaks all its callers at once and
 the project keeps no compatibility path. Each commit of the slice builds.
@@ -336,22 +360,23 @@ maintained Lean code, such as the experiment, separately.
 Code lines are the `Code` field of scc 3.7.0, the counter of the simplification goal.
 
 - **Replaced.** The enumeration and normal-form code that the module replaces has 431 code
-  lines (733 `wc -l` lines, survey).
-- **Added.** The prototype has 1,225 code lines, and 1,175 without its examples `Select.lean`
-  and `Examples.lean` (findings). Slice 1 adds about 1,175 lines plus the enumerations and
+  lines (733 `wc -l` lines, survey). Slice 2 also deletes the model's copy of the insertion sort
+  and its laws, which the module has (about 58 code lines in the prototype).
+- **Added.** The prototype has 1,322 code lines, and 1,261 without its examples `Select.lean`
+  and `Examples.lean` (findings). Slice 1 adds about 1,261 lines plus the enumerations and
   their membership laws.
 - **Net.** The module is about three times as large as the code that it replaces, because it
   proves general laws that the model does not have today, for example the canonical form and
-  its uniqueness (208 code lines). The ADR expects a net increase of about 750 to 1,000 code
+  its uniqueness (208 code lines). The ADR expects a net increase of about 770 to 1,020 code
   lines of the packages after slice 2, plus the change of the tests, which slice 2 measures.
   Laws of the model that sort today can become shorter with the module, but the ADR does not
   count on that. Slice 2 records the measured result.
-- **Full scope.** The goal also counts the experiment. Its 1,246 code lines come in the pull
+- **Full scope.** The goal also counts the experiment. Its 1,343 code lines come in the pull
   request of this ADR, before the ADR, and the slices delete them. So from the revision before
   the experiment (`1fb455ac` on main) to the end of slice 2, the full scope grows by the same
-  750 to 1,000 lines and the change of the tests: about 1% of the last recorded count of the
-  goal (98,829 lines, ADR 0033). From the revision with the experiment, it shrinks by about 250
-  to 500 lines, plus the change of the tests. The line budget (owner decision 5) is the growth
+  770 to 1,020 lines and the change of the tests: about 1% of the last recorded count of the
+  goal (98,829 lines, ADR 0033). From the revision with the experiment, it shrinks by about 320
+  to 570 lines, plus the change of the tests. The line budget (owner decision 5) is the growth
   from the revision before the experiment, because the Lean files of the experiment are
   temporary.
 
@@ -378,17 +403,20 @@ Capability groups of the simplification goal:
   example that WHERE commutes with UNION ALL.
 - **Claims on order need ORDER BY.** A claim that reads the order of rows of a query without
   ORDER BY has a proof for each order, or is stated on the bag.
-- **Kernel time grows a little.** About 1.4 to 1.5 times for the equality of bags of 100 or more
-  rows; for 10 rows, both representations take less than 0.04 seconds.
+- **No extra kernel time.** With the decision through samples, the equality of bags of rows
+  costs the same as the equality of normal-form lists.
 - **No judge change.** The judge already compares bags and tie groups, and the prediction does
   not change.
 
 ## Alternatives considered
 
 **Normal-form lists with explicit tie groups.** `Output.rows` could carry a list of groups, each
-in normal form. This is the canonical form as data, at 0.7 times the kernel cost of the
-quotient for 100 or more rows. Each law of bags would then need a sort and
-`normalForm_eq_iff_perm`. The quotient gives these laws directly.
+in normal form. This is the canonical form as data. Its kernel cost is the same as for the
+quotient with the decision through samples, and 0.7 times the cost of the decision by
+`List.Perm`, for 100 or more rows. Each law of bags would then need a sort and
+`normalForm_eq_iff_perm`, and the type would not stop a claim from reading the order of the
+normal form. The quotient gives these laws directly, and its sample gives the same kernel
+cost.
 
 **Only the meaning, without enumerations.** The module could define the choices only as values
 of `ND`. The model could then not compute outputs, and the tests could not decide them.
@@ -424,15 +452,15 @@ it. A change would change predictions and verdicts, for no gain in the meaning o
 
 1. **Place of the module.** A directory of the model package with an import test (D2,
    recommended), or a separate Lake package.
-2. **Representation.** The quotient `Bag` (D4, recommended), or normal-form lists with tie
-   groups.
+2. **Representation.** The quotient `Bag`, with its equality for rows decided through samples
+   (D4, recommended), or normal-form lists with tie groups.
 3. **The primitive claim.** `returnsResult` reads the ranked result, with the list view as the
    helper `returnsLists` (D7, recommended), or `returnsResult` reads the permitted lists, and
    `decide` enumerates the arrangements of each group.
 4. **Capability accounting.** Claims that a result without ORDER BY is one sorted list are
    restated on bags, and S04 and S06 count as retained (D10, recommended), or they count as a
    loss that the owner approves.
-5. **Line budget.** Accept a net increase of the goal's full scope of about 750 to 1,000 code
+5. **Line budget.** Accept a net increase of the goal's full scope of about 770 to 1,020 code
    lines and the change of the tests, from the revision before the experiment (`1fb455ac` on
    main) to the end of slice 2 (D10, recommended), or integrate a smaller module first: for
    example, without the uniqueness of the canonical form (`CanonicalUnique.lean`, 123 code

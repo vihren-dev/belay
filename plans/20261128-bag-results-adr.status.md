@@ -76,3 +76,13 @@ Relevant sources: `packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Executi
   costs the same as normal-form lists (2.375 s and 2.362 s for 100 rows, 9.099 s and 9.167 s
   for 200), the decision by `List.Perm` 3.274 s and 13.198 s. The findings cite this build.
   Tests: the Nix build, `tests/docs_test.py`.
+- 2026-11-28: review 20261128T170221Z-22e0e627 (2 must, 2 should). The two musts are on the
+  ADR, which this commit updates for the sample: D3 (the module takes the model's sort, and
+  slice 2 deletes the model's copy), D4 (the model decides equality of rows through samples and
+  shows samples; claims do not read them), the kernel table, D10 with 1,322 and 1,343 code
+  lines, the alternatives, and owner decisions 2 and 5. The shoulds: the sample docstrings name
+  both sorts, and the findings say which examples use which decision. Nix build
+  `/nix/store/726kbww46xp160lxvnjig4zkdvhp53xk-bag-results-experiments`: 62 audited theorems,
+  probe output equal, 1,343 code lines; through samples 2.507 s and 9.359 s, normal form
+  2.428 s and 9.144 s, `List.Perm` 3.276 s and 13.261 s. Tests: the Nix build,
+  `tests/docs_test.py`.

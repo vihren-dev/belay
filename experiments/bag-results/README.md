@@ -32,7 +32,7 @@ output directory has:
 | `model-path.txt`, `toolchain-path.txt`, `sqlite-path.txt` | the pinned store paths |
 
 The results below are from the Nix build
-`/nix/store/2v81bm3h3cdm7402724r0xqb2rk0pwz9-bag-results-experiments`.
+`/nix/store/726kbww46xp160lxvnjig4zkdvhp53xk-bag-results-experiments`.
 
 ## Current outputs of the model
 
@@ -96,7 +96,7 @@ theorem has a `#print axioms` line after it; the Nix build records the axioms of
 | `Equivalence.lean` | the lists that an application can read (`observe`) and the equivalence of two results (`Equivalent`) |
 | `Sample.lean` | the insertion sort of the model (`stableSort`) and its laws; a sort order (`SortOrder`); the sample of a bag, its rows sorted (`Bag.sample`), and the decision of equality through samples (`Bag.decEqBySample`) |
 | `Select.lean` | a single-table SELECT, as an example of composition: WHERE, ORDER BY on the input rows, the window, then a total projection |
-| `Examples.lean` | `decide +kernel` and `decide` on equalities of small literal bags, with each decision; samples of bags of natural numbers |
+| `Examples.lean` | `decide +kernel` on equalities of small literal bags with both decisions, and `decide` with the decision by `List.Perm`; samples of bags of natural numbers |
 
 The theorems for the points of the task file:
 
@@ -159,19 +159,19 @@ two integer values, and the first value repeats, so the rows have ties. The thre
   `Resolved.compareRows`.
 
 Each time is the best wall time of three runs, minus the best wall time of a baseline file with
-the same imports and definitions but no proof (0.219 s).
+the same imports and definitions but no proof (0.221 s).
 
 | Rows | Quotient | With samples | Normal form |
 | ---: | ---: | ---: | ---: |
-| 10 | 0.036 s | 0.037 s | 0.036 s |
-| 50 | 0.815 s | 0.646 s | 0.649 s |
-| 100 | 3.274 s | 2.375 s | 2.362 s |
-| 200 | 13.198 s | 9.099 s | 9.167 s |
+| 10 | 0.033 s | 0.040 s | 0.037 s |
+| 50 | 0.810 s | 0.655 s | 0.681 s |
+| 100 | 3.276 s | 2.507 s | 2.428 s |
+| 200 | 13.261 s | 9.359 s | 9.144 s |
 
 All three are quadratic in the number of rows. The decision by `List.Perm` costs about 1.4 times
 the normal form for 100 and 200 rows. The decision through samples costs the same as the normal
-form within the noise: the quotient costs nothing extra in the kernel when its equality compares
-samples. For 10 rows the three are equal within the noise.
+form within 3%, the variation between three builds of this experiment: the quotient costs
+nothing extra in the kernel when its equality compares samples. For 10 rows the three are equal within the noise.
 
 ## Code lines
 
