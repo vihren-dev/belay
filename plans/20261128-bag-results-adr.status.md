@@ -97,3 +97,9 @@ Relevant sources: `packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Executi
 - 2026-11-28: review 20261128T171051Z-4c614dd8 (0 must, 2 should). D4 gives the three timings
   for 100 rows with their decisions, and the consequence says "comparable" and gives the
   increases with their row counts. Text only. Tests: `tests/docs_test.py`.
+- 2026-11-28: the owner merged `main` at `73f2ad80` into the PR branch (`bf4a939c`); the sample
+  commits are rebased onto that merge. The model package changed, so the experiment's build
+  changed: Nix build `/nix/store/pfpkd0hs585rf49ky2iqznc523qyz85f-bag-results-experiments` has
+  the same `proofs.json` (62 audited theorems), probe output equal, the same code lines of each
+  file (1,343); through samples 2.342 s and 9.096 s, normal form 2.349 s and 9.151 s,
+  `List.Perm` 3.316 s and 13.220 s. The findings keep the measured build and name this one.

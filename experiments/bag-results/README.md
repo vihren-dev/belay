@@ -32,7 +32,12 @@ output directory has:
 | `model-path.txt`, `toolchain-path.txt`, `sqlite-path.txt` | the pinned store paths |
 
 The results below are from the Nix build
-`/nix/store/726kbww46xp160lxvnjig4zkdvhp53xk-bag-results-experiments`.
+`/nix/store/726kbww46xp160lxvnjig4zkdvhp53xk-bag-results-experiments`, with the model package
+of `main` at `1fb455ac`. After the merge of `main` at `73f2ad80` into this branch, the build
+`/nix/store/pfpkd0hs585rf49ky2iqznc523qyz85f-bag-results-experiments` gives the same axioms of
+the 62 audited theorems, the same probe output and the same code lines of each file. Its kernel
+times through samples are 2.342 s for 100 rows and 9.096 s for 200 rows, and for normal-form
+lists 2.349 s and 9.151 s.
 
 ## Current outputs of the model
 
