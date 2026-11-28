@@ -8,12 +8,14 @@ Discussion: [Belay issue 489](https://github.com/vihren-dev/belay/issues/489), c
 A query without ORDER BY gives rows in an order that SQLite does not promise. The model gives
 these rows as a list in a normal form (`Resolved.normalForm`). ORDER BY with ties gives each tie
 group in normal form, and the output (`Output.rows`) joins the groups into one list. Thus the
-output does not record which order SQLite promises. LIMIT and OFFSET without a total order give
-a choice of results (`Output.oneOf`), as a list of lists.
+output does not record which order SQLite promises. LIMIT and OFFSET without a total order can give
+two or more different results; the output is then a choice (`Output.oneOf`), a list of lists.
+When every choice gives the same rows, the output is `Output.rows`.
 
 The owner proposed on 2026-11-28 that the result of a query without ORDER BY is a bag (a
 multiset), that ORDER BY can make a list of it, and that LIMIT of a bag is a bag that is not
-determined: any sub-bag of the limit's size. A bag is then known by its rows, or as the result of
+determined: any sub-bag of the limit's size. When fewer rows remain after OFFSET, the size is
+the number of the remaining rows. A bag is then known by its rows, or as the result of
 a nondeterministic program whose inputs are bags.
 
 This task runs experiments on this idea and writes an ADR for its implementation. The owner
@@ -28,10 +30,11 @@ this module into the rest of the code, which replaces lists with bags in many pl
    BY, and the equivalence of two results by the lists that an application can read. It proves,
    with no `sorry`:
    - the algebra of bags that reduction needs: filter, map, UNION ALL and product;
-   - the description of LIMIT as a sub-bag of a given size, and that its row count is
-     determined;
-   - that ORDER BY does not depend on the order of its input, and that a subquery reader cannot
-     see an ORDER BY without LIMIT;
+   - the description of LIMIT as a sub-bag whose size is the smaller of the limit and the
+     number of rows, and that its row count is determined;
+   - that ORDER BY does not depend on the order of its input, and that a reader that takes the
+     rows of a subquery as a bag (a FROM source, IN or EXISTS) cannot see an ORDER BY without
+     LIMIT. A scalar subquery reads its first row, as LIMIT 1 does, so it can see the order;
    - that OFFSET and LIMIT over ranked rows take a slice of each list that the rows permit;
    - a canonical form of ranked rows: two ranked results permit the same lists exactly when
      their canonical forms are equal;
@@ -77,5 +80,7 @@ this module into the rest of the code, which replaces lists with bags in many pl
   A change of the judge or of a corpus needs its own pull request with the owner's approval
   (ADR 0011).
 - The [simplification goal](../docs/development/lean-simplification-goal.md) limits maintained
-  Lean lines. The ADR estimates the net change.
+  Lean lines and fixes a capability baseline. The prototype is an experiment and changes no
+  maintained code, so it has no capability effect. The ADR estimates the net line change of the
+  integration and states its effects on the capability baseline.
 - A local result is not evidence. The findings cite the Nix build of the experiment.
