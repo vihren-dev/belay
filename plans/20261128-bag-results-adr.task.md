@@ -30,11 +30,14 @@ this module into the rest of the code, which replaces lists with bags in many pl
    BY, and the equivalence of two results by the lists that an application can read. It proves,
    with no `sorry`:
    - the algebra of bags that reduction needs: filter, map, UNION ALL and product;
-   - the description of LIMIT as a sub-bag whose size is the smaller of the limit and the
-     number of rows, and that its row count is determined;
-   - that ORDER BY does not depend on the order of its input, and that a reader that takes the
-     rows of a subquery as a bag (a FROM source, IN or EXISTS) cannot see an ORDER BY without
-     LIMIT. A scalar subquery reads its first row, as LIMIT 1 does, so it can see the order;
+   - the description of LIMIT as a sub-bag of the rows that remain after OFFSET, and that its
+     row count is determined: for a negative limit, which SQLite treats as no limit, the count is
+     the number of remaining rows; otherwise it is the smaller of the limit and that number;
+   - that ORDER BY does not depend on the order of its input, and that a reader whose result
+     does not change when its input rows are permuted (for example IN or EXISTS) cannot see an
+     ORDER BY without LIMIT. Other readers can see the order: a scalar subquery reads its first
+     row, as LIMIT 1 does, and native SQLite keeps the order of a FROM subquery for the outer
+     query, for example for an outer `group_concat`;
    - that OFFSET and LIMIT over ranked rows take a slice of each list that the rows permit;
    - a canonical form of ranked rows: two ranked results permit the same lists exactly when
      their canonical forms are equal;
@@ -80,7 +83,9 @@ this module into the rest of the code, which replaces lists with bags in many pl
   A change of the judge or of a corpus needs its own pull request with the owner's approval
   (ADR 0011).
 - The [simplification goal](../docs/development/lean-simplification-goal.md) limits maintained
-  Lean lines and fixes a capability baseline. The prototype is an experiment and changes no
-  maintained code, so it has no capability effect. The ADR estimates the net line change of the
-  integration and states its effects on the capability baseline.
+  Lean lines and fixes a capability baseline. New code under `experiments/` counts as
+  maintained code, so the README records the code lines of the prototype, and the ADR counts
+  them in its line estimate. The prototype changes no capability of the baseline. The ADR
+  estimates the net line change of the integration and states its effects on the capability
+  baseline separately.
 - A local result is not evidence. The findings cite the Nix build of the experiment.
