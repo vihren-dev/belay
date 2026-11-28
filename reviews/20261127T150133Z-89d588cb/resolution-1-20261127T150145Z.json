@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-27T15:01:45+00:00",
+  "finding": "20261127T150133Z-89d588cb#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The owner requested this exact side-specific diagnostic without advice about supported query shapes."
+}

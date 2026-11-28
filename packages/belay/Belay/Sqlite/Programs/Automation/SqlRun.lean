@@ -1,5 +1,6 @@
-import Belay.Sqlite.Programs.Automation.SqlRunKindRules
+import Belay.Sqlite.Programs.Automation.SqlRunDelete
 import Belay.Sqlite.Programs.Automation.SqlSelect
+import Belay.Sqlite.Programs.Claims.CompileSelect
 
 set_option doc.verso true
 
@@ -22,7 +23,7 @@ partial def runGoal (hints : Hints) (first : Bool) (fuel : Nat) (goal : MVarId) 
   let goal ← enterCheck goal
   let some program ← checkProgram? (← goal.getType)
     | if first then
-        throwError "sql_run proves a check of a SQL program, a triple, or the goal that mvcgen leaves for one. This goal is none of these. Use another tactic, or state the claim with Sql.check."
+        throwError "sql_run accepts a last-output equivalence (left ~ right on catalog), a SQL program check, a triple, or the goal that mvcgen leaves for one. This goal is none of these. Use another tactic, or state the claim with Sql.check."
       else return [goal]
   let apply (tactic : TSyntax `tactic) : TacticM (List MVarId) := do
     setGoals [goal]
@@ -80,6 +81,8 @@ the goal and the messages stay as they were, and the step rule of the read appli
   /-- Apply the rule of a sent script to a goal. A script of several statements is split after its first
   statement, so that each statement gets its own rule at the context that the earlier ones reach. A visible SELECT uses its syntax rule, which
   requires only its syntax. For other sends {name}`applyKindRule` tries the exact equations using the supplied resolutions.
+  If no supplied resolution selects a rule for a DELETE, {name}`catalogDelete?` tries a catalog hint on a fresh
+  connection. A local hypothesis can then close a remaining goal.
   The cases of a kind rule that fail are closed when their trace is not error-free. -/
   runSend (hints : Hints) (first : Bool) (fuel : Nat) (goal : MVarId) (script : Expr) : TacticM (List MVarId) := do
     let some (statement, values, rest) ← firstStatement? script
@@ -98,11 +101,15 @@ the goal and the messages stay as they were, and the step rule of the read appli
       setGoals [goal]
       evalTactic (← `(tactic| refine' Sql.check_send_select ?isSelect ?modeled ?reached))
       return ← processPremises hints fuel (← getGoals)
-    if let some (open_, cases) ← applyKindRule hints goal then
+    let explicit ← applyKindRule hints goal
+    let inferred ← if explicit.isNone && syntaxKind == some ``Model.Syntax.Statement.delete then
+      catalogDelete? hints goal script else pure none
+    if let some (open_, cases) := explicit.orElse (fun _ => inferred) then
       let mut result := open_
       for case_ in cases do
         let failed := (← case_.getTag) == `failure
         for rest in ← runGoal hints false (fuel - 1) case_ do
+          if inferred.isSome && (← rest.withContext <| rest.assumptionCore) then continue
           result := result ++ (← if failed then closeFailure rest else pure [rest])
       return result
     stuck first goal "no hint or hypothesis gives a resolved kind for this send."
@@ -131,9 +138,34 @@ the goal and the messages stay as they were, and the step rule of the read appli
           blocked := blocked || blockingPremises.contains tag
     return (← variables.filterM fun data => return !(← data.isAssigned)) ++ open_
 
-/-- Apply the step rules to the check of a SQL program, and leave the obligations that the rules do not
-discharge. The optional terms are hints: each is tried against each premise about the context, for
-example the resolution of a statement. -/
+/-- Compile both scripts on one catalog and compare their certified last outputs.
+Leave the equality open when the compiled plans need another law. -/
+private def compareLastOutputs (left right catalog : Expr) : TacticM Unit := do
+  let certificate (script : Expr) (side : String) := do
+    let plan ← mkAppM ``Script.compileScan? #[script, catalog]
+    unless (← whnf plan).isAppOf ``Option.some do
+      throwError "sql_run: unsupported query on the {side} of ~"
+    let compiled ← mkAppM ``Option.get #[plan, ← mkEqRefl (mkConst ``Bool.true)]
+    mkAppM ``Subtype.property #[compiled]
+  let lhs ← certificate left "left"
+  let rhs ← certificate right "right"
+  let saved ← Tactic.saveState
+  liftMetaTactic fun goal => do goal.apply (← mkAppM ``CompiledScript.same_of_eq #[lhs, rhs])
+  let target ← instantiateMVars (← getMainTarget)
+  let compare ← if target.hasFVar then `(tactic| with_unfolding_all rfl) else `(tactic| decide +kernel)
+  let equal ← tryCatchRuntimeEx (do withoutRecover (evalTactic compare); pure true) fun error =>
+    if error.isRuntime && !error.isMaxRecDepth then throw error else pure false
+  if equal then return
+  saved.restore
+  let same ← mkAppM ``LastOutputPlan.sameLastOn_iff
+    #[← mkAppM ``CompiledScript.correct #[lhs], ← mkAppM ``CompiledScript.correct #[rhs]]
+  liftMetaTactic fun goal => do goal.apply (← mkAppM ``Iff.mpr #[same])
+  evalTactic (← `(tactic| intro db schema env complete))
+
+/-- Compare the compiled plans of a last-output equivalence, or apply the step rules to the check
+of a SQL program. Leave any open obligations for the caller. The optional terms are hints: each is tried against each premise about the context, for
+example the resolution of a statement. For a plain DELETE on a fresh connection, a
+catalog hint supplies the resolution and target table. The tactic also tries the DELETE coverage rule. -/
 syntax (name := sqlRun) "sql_run" (" [" term,* "]")? : tactic
 
 /-- Run {lit}`sql_run`: process the main goal and put the open obligations in place of it. -/
@@ -142,9 +174,12 @@ syntax (name := sqlRun) "sql_run" (" [" term,* "]")? : tactic
     | `(tactic| sql_run [$hints,*]) => hints.getElems
     | _ => #[]
   let goal ← getMainGoal
-  let siblings := (← getGoals).drop 1
-  let remaining ← runGoal hints true traversalFuel goal
-  let tidied ← remaining.mapM tidy
-  setGoals (tidied ++ siblings)
+  match_expr ← goal.getType with
+  | Script.SameLastOn left right catalog => goal.withContext <| focus <| compareLastOutputs left right catalog
+  | _ =>
+    let siblings := (← getGoals).drop 1
+    let remaining ← runGoal hints true traversalFuel goal
+    let tidied ← remaining.mapM tidy
+    setGoals (tidied ++ siblings)
 
 end Belay.Sqlite.Run

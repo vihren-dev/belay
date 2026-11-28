@@ -12,6 +12,15 @@ filter gives to the rows that it keeps. -/
 
 namespace Belay.Sqlite.Model.Resolved
 
+/-- For every pair of values and every collation, {lit}`IS NOT` accepts exactly the pairs that
+{lit}`IS` rejects. For example, {lit}`NULL IS NOT 7` is true. Use {lean}`Collation.binary`
+for the default collation. Proof sketch: split on whether each value is NULL and on their
+ordering under the collation. -/
+theorem truthy_isNot (left right : Value) (collation : Collation) :
+    truthy (Comparison.isNot.apply left right collation) = !truthy (Comparison.is.apply left right collation) := by
+  cases hl : left.isNull <;> cases hr : right.isNull <;> cases hc : collation.compare left right <;>
+    simp [Comparison.apply, Comparison.holds, hl, hr, hc, truth, truthy]
+
 /-- {lit}`x IS NOT NULL`: for every affinity, collation and value, the comparison {lit}`IS NOT`
 of the value with NULL is true exactly when the value is not NULL. Proof sketch: the affinity
 keeps both operands NULL or not ({name}`comparisonOperands_isNull`), and {lit}`IS NOT` with a

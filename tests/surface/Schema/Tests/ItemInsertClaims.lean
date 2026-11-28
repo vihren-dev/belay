@@ -148,9 +148,8 @@ def NamesPresent (database : Model.Database) : Prop :=
 name, every database whose catalog is {name}`itemsCatalog` and which satisfies {name}`NamesPresent`, and every
 complete environment: the final database of the fresh run of {name}`insertItem` satisfies {name}`NamesPresent`,
 whether the insert succeeds or fails. Proof sketch: {lit}`sql_run` applies the kind rule of plain INSERT and leaves
-three goals. In {lit}`modeled`, the hypothesis {lit}`rule` rewrites the step, and the data facts reduce it to a step
-that continues in both outcomes. In {lit}`success`, the new row has a text name and the old rows keep theirs. In
-{lit}`failure`, the database does not change. -/
+the modeled and success goals. In {lit}`modeled`, the hypothesis {lit}`rule` rewrites the step, and the data facts reduce it to a step
+that continues in both outcomes. In {lit}`success`, the new row has a text name and the old rows keep theirs. The precondition supplies the failure case because the database stays the same. -/
 theorem insert_keeps_names (id : Int64) (name : String) :
     FreshTriple (send (insertItem id name)) (fun db => db.raw.catalog = itemsCatalog ∧ NamesPresent db.raw)
       (fun _ _ _ final => NamesPresent final.connection.state.database) := by
@@ -180,9 +179,6 @@ theorem insert_keeps_names (id : Int64) (name : String) :
       rcases member with old | rfl
       · exact before row (by simpa using old)
       · simp [itemRow, itemValues]
-  case failure =>
-    simp only [ExecutionContext.next, ExecutionContext.initial, Connection.afterWrite, Database.Raw.connection]
-    exact before
 
 #print axioms new_key_inserts
 #print axioms taken_key_fails

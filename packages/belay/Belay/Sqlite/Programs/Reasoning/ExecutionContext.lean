@@ -17,6 +17,11 @@ structure ExecutionContext where
   /-- Outputs before this program; use the empty list for a fresh run. -/
   outputs : List Output := []
 
+/-- The database visible to this connection has the catalog of the given schema database.
+Use this premise for a read after a write, including inside a transaction. -/
+def ExecutionContext.HasCatalog (state : ExecutionContext) (schema : Database) : Prop :=
+  state.connection.state.database.catalog = schema.catalog
+
 /-- Append a complete run to a proof context. A stopping step counts as an executed step;
 the existing clock is preserved. This operation does not execute SQL. -/
 def ExecutionContext.finish {α : Type} (state : ExecutionContext) (result : SqlRun α) : ExecutionContext :=

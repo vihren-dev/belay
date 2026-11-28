@@ -88,18 +88,21 @@ def test_parameter_window_cases(runtime_root: Path, tmp_path: Path) -> None:
 
 
 def test_context_cases(runtime_root: Path, tmp_path: Path) -> None:
-    """Acceptance cases A21 and A22 through the step-output rule for a SELECT (`Sql.check_query_of_step_rows`) and the delete rule (`runScriptStep_plainDelete_eq`,
-    `Connection.resolveState_afterWrite`): at every context with the catalog of `shop`, the big-orders
-    query returns the rows of the database of that context; after any program, `sql_select` proves the same
-    read at each reached context through `Sql.check_query_catalog_rows_at` and the leaf's `assumption`, also
-    after a delete; at every context whose
+    """Acceptance cases A21 and A22. At any context with the catalog of shop, sql_select uses
+    Sql.check_query_catalog_rows_at to prove the big-orders query reads the qualifying rows.
+    From a catalog hint, sql_run proves that DELETE preserves name resolution.
+    A DELETE that reads changes() also requires a known counter. At every context whose
     counters know `changes()`, `SELECT changes()` returns that value and keeps the connection. The
     instances show a result from the start that does not hold after a delete, and `changes()`, which has
-    no result in the default environment but the count of the delete after it. Every proof has only
-    logical axioms."""
+    no result in the default environment but the count of the delete after it. The DELETE coverage
+    fixtures check cover_delete with the model laws scalarSucceeds and jsonSucceeds and the
+    inProjection subquery rule. FunctionCallSafetyCases checks scalarSucceeds, jsonSucceeds and
+    extractInputs_iff directly in the model. DeleteLastOutput proves the shop equivalence by sql_run, checks equality of the compiled
+    plans, and distinguishes an earlier SQL error from a final error. Every proof has only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectGroupSupport", 0), ("SelectJoinSupport", 0),
-                       ("SelectJoinCases", 3), ("SelectDerivedSupport", 3), ("SelectContextCases", 3),
-                       ("SelectCounterContextCases", 1)),
+                       ("SelectJoinCases", 3), ("SelectDerivedSupport", 3), ("SelectContextCases", 4),
+                       ("SelectCounterContextCases", 1), ("FunctionCallSafetyCases", 8), ("DeleteCoverageCases", 14),
+                       ("DeleteLastOutput", 1)),
                        timeout=120)
 
 
@@ -111,3 +114,25 @@ def test_function_fault_cases(runtime_root: Path, tmp_path: Path) -> None:
     `WHERE 0` skips that call and makes the result empty. The instances check each claim and the negation
     of the two other claims. Every proof has only logical axioms."""
     check_module_chain(runtime_root, tmp_path, (("SelectFunctionFaultCases", 3),), timeout=90)
+
+
+def test_row_filter_algebra(runtime_root: Path, tmp_path: Path) -> None:
+    """Check the four row-filter relations on empty, singleton, concatenated and duplicate
+    inputs and on SQL NULL. Check IS NOT row survival and the projected bag after DELETE. Audit all proofs, including the singleton truth tables."""
+    check_module_chain(runtime_root, tmp_path, (("RowFilterCases", 7),), timeout=30)
+
+
+def test_compiled_select_profiles(runtime_root: Path, tmp_path: Path) -> None:
+    """Check Script.compileLastOutput? on bound singleton SELECTs and unsupported SQL shapes.
+    CompiledScript.Filter.expr and Filter.both normalize conjunctions and retain distinct bindings.
+    sql_run reports which side is unsupported and closes identical or rejecting plans.
+    Script.compileScan? normalizes empty scans. CompiledScript.same_of_eq certifies equal plans.
+    Different plans leave the last-output equality for the caller.
+    CompiledExpr.compile and CompiledExpr.run preserve faults and evaluate row-dependent sums."""
+    check_module_chain(runtime_root, tmp_path, (("CompiledSelectCases", 10),), timeout=60)
+
+
+def test_compiled_delete_profiles(runtime_root: Path, tmp_path: Path) -> None:
+    """Check Script.compileLastOutput? and sql_run for DELETE counts and reads after multiple writes.
+    CompiledScript.deleteStep transports the filtered scan, including duplicates, NULLs and separate bindings."""
+    check_module_chain(runtime_root, tmp_path, (("CompiledDeleteCases", 4),), timeout=60)

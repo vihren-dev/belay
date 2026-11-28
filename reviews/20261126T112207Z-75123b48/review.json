@@ -1,0 +1,90 @@
+{
+  "caller": "codex",
+  "commit": "75123b480eae91505c63d9e5a7d5ff08805218f1",
+  "date": "2026-11-26T11:22:07+00:00",
+  "exit": 1,
+  "files": [
+    "docs/guide/agents.md",
+    "packages/belay/Belay/Sqlite/Programs/Automation/DeleteCoverage.lean",
+    "packages/belay/Belay/Sqlite/Programs/Automation/DeleteCoverageRows.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Programs/Scripts/PlainDeleteCoverage.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/JsonCallSafety.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/JsonPathSafety.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/ScalarCallSafety.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261126-function-safety.status.md",
+    "plans/20261126-function-safety.task.md",
+    "reviews/20261126T105722Z-61327542/review.json",
+    "tests/surface/Programs/Tests/DeleteCoverageCases.lean",
+    "tests/surface/Programs/Tests/FunctionCallSafetyCases.lean",
+    "tests/surface_fixture_roots.json",
+    "tests/surface_select_sources_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261126T112207Z-75123b48#1",
+      "line": 16,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/ScalarCallSafety.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The docstring of `ScalarInputs` restates only the printf case and omits the conditions for ABS, zeroblob, LIKE and GLOB (pattern limit), the LIKE escape, and UNISTR. Fix: list one item for each case of the formula with its condition, and name the arities that require nothing."
+    },
+    {
+      "id": "20261126T112207Z-75123b48#2",
+      "line": 14,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Queries/Evaluation/JsonCallSafety.lean",
+      "rule": "R2",
+      "severity": "must",
+      "text": "The docstring of `JsonInputs` summarizes by group and omits the second conjunct of `arrowValue`, the cases for quote, patch, pretty, error position and `json`/`jsonb`, and the cases that require nothing (one-argument `valid` and each unlisted arity). Fix: restate each case of the match, including the ones that are `True`."
+    },
+    {
+      "id": "20261126T112207Z-75123b48#3",
+      "line": 11,
+      "path": "plans/20261126-function-safety.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status file cites local results (`just dev-build` and local pytest runs) as evidence, but `AGENTS.md` says that a status file cites only results of the Nix checks. Fix: replace the local results with the results of the Nix checks, or mark them as local results that are not evidence."
+    },
+    {
+      "id": "20261126T112207Z-75123b48#4",
+      "line": 31,
+      "path": "packages/belay/Belay/Sqlite/Programs/Automation/DeleteCoverage.lean",
+      "rule": "R1",
+      "severity": "should",
+      "text": "The built-in call laws that `cover_delete` applies are a list literal inside the `solve_by_elim` call, while `inProjection` is registered through `delete_row_fact`. Fix: register the built-in laws in one named place with a docstring, for example with `attribute [delete_row_fact]` on `scalarSucceeds`, `jsonSucceeds` and a named lemma for the extraction direction."
+    },
+    {
+      "id": "20261126T112207Z-75123b48#5",
+      "line": 103,
+      "path": "tests/surface_select_sources_test.py",
+      "rule": "R15",
+      "severity": "should",
+      "text": "The docstring of `test_context_cases` does not say which code the new `FunctionCallSafetyCases` fixture checks; it mentions `scalarSucceeds` and `jsonSucceeds` only through `cover_delete`. Fix: add a sentence that the fixture checks direct use of `scalarSucceeds`, `jsonSucceeds` and `extractInputs_iff` from the model, without statement execution."
+    }
+  ],
+  "id": "20261126T112207Z-75123b48",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "fcc654e6c442",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R20": "c1ac781b0a20",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
