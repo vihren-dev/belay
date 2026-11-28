@@ -1,0 +1,108 @@
+== SQLite version
+3.51.0
+== P0 the queries of CurrentOutputs.lean on the guide's customers
+bob
+ada
+bob
+ada
+ada
+bob
+== P1 LIMIT 1 without ORDER BY: rowid scan, then an index on name
+bob
+ada
+== P2 rows without ORDER BY and with ORDER BY name
+bob
+ada
+cy
+ada
+bob
+cy
+== P3 a tie of ORDER BY p: rowid scan, then an index on (p, name)
+bob
+ada
+cy
+ada
+bob
+cy
+== P4 the row that DISTINCT keeps under NOCASE: rowid scan, then a BINARY index
+a
+b
+A
+b
+== P5 the row that GROUP BY shows under NOCASE: rowid scan, then a BINARY index
+a|2
+b|1
+A|2
+b|1
+== P6 group_concat: rowid scan, index scan, and ORDER BY in the aggregate
+bob,ada,cy
+ada,bob,cy
+cy,bob,ada
+== P7 sum, total and avg of REAL values: rowid scan, then an index on x
+Inf|Inf|Inf
+1.0e+308|1.0e+308|3.33333333333333e+307
+== P8 sum of REAL values without overflow: rowid scan, then an index on x
+2.0
+2.0
+== P9 a CTE with LIMIT that the query reads two times: default, MATERIALIZED, NOT MATERIALIZED
+ada|ada
+QUERY PLAN
+|--MATERIALIZE k
+|  `--SCAN t USING COVERING INDEX t_name
+|--SCAN a
+`--SCAN b
+QUERY PLAN
+|--MATERIALIZE k
+|  `--SCAN t USING COVERING INDEX t_name
+|--SCAN a
+`--SCAN b
+QUERY PLAN
+|--MATERIALIZE k
+|  `--SCAN t USING COVERING INDEX t_name
+|--SCAN a
+`--SCAN b
+== P10 a scalar subquery with LIMIT: uncorrelated, then correlated
+1|ada
+2|ada
+3|ada
+QUERY PLAN
+|--SCAN o
+`--SCALAR SUBQUERY 1
+   `--SCAN t USING COVERING INDEX t_name
+1|ada
+2|bob
+3|ada
+QUERY PLAN
+|--SCAN o
+`--CORRELATED SCALAR SUBQUERY 1
+   `--SCAN t USING COVERING INDEX t_name
+== P11 a scalar subquery reads the first row of its ORDER BY
+ada
+cy
+== P12 ORDER BY in a FROM subquery: the outer query keeps the order
+ada,bob,cy
+cy,bob,ada
+cy
+bob
+ada
+QUERY PLAN
+`--SCAN t USING COVERING INDEX t_name
+== P13 ORDER BY in a FROM subquery that is part of a join
+ada
+bob
+cy
+QUERY PLAN
+|--SCAN w
+`--SCAN t USING COVERING INDEX t_name
+== P14 ORDER BY in an IN subquery and an EXISTS subquery
+bob
+ada
+cy
+3
+== P15 a sort key that fails in an IN subquery: a column without an index, then the rowid
+1
+Runtime error near line 80: integer overflow
+1
+== P16 sum of integers that overflows in one order: rowid scan, then an index on x
+Runtime error near line 85: integer overflow
+9223372036854775807
