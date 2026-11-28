@@ -153,9 +153,12 @@ runs, without the time of the imports and the definitions.
 | 200 | 13.3 s | 9.4 s | 9.1 s |
 
 All three are quadratic. For 100 and 200 rows, the decision by `List.Perm` costs about 1.4 times
-the normal form. The decision through samples costs the same as the normal form within 3%, the
-variation between builds: a quotient costs nothing extra in the kernel when its equality
-compares samples.
+the normal form. The decision through samples computes the normal forms of a list of each bag
+and compares them, the same work as the comparison of normal-form lists. In the cited build, it
+took 3% more time for 100 rows (2.507 s against 2.428 s) and 2% more for 200 rows (9.359 s
+against 9.144 s); in two earlier builds of the experiment, the two were within 2% of each other
+(findings). So for this benchmark, one equality of two bags, the quotient with samples costs
+about as much as normal-form lists.
 
 ## Decision
 
@@ -193,8 +196,9 @@ The module has the definitions and laws of the prototype, without its examples (
 and `Examples.lean`). The model also needs:
 
 - **Enumerations.** Each choice also has a function that computes its results. It takes a list
-  of the rows, not a bag: a list of results cannot be a function of the bag alone, because its
-  order would depend on the arrangement. ORDER BY has `rankLists le l : List (List α)`, the
+  of the rows: without a sort order, a list of results cannot be a function of the bag alone,
+  because its order would depend on the arrangement. The list of the evaluator then fixes the
+  order of the enumeration. ORDER BY has `rankLists le l : List (List α)`, the
   tie groups of `l` as lists (the sort of `l` by `le`, split into tie groups), with the law
   `rank le (Bag.ofList l) = pure ((rankLists le l).map Bag.ofList)` for a total and transitive
   `le`. LIMIT has `subBagsOf n l : List (Bag α)`, the results of LIMIT `n` on the rows of `l`,
@@ -229,14 +233,17 @@ of `Resolved.normalForm`. The sample of a bag is the normal form of each list of
 model uses it in two ways:
 
 - **Equality.** The model declares `Bag.decEqBySample` as the instance for bags of rows, with a
-  higher priority than the decision by `List.Perm`. So `decide +kernel` costs the same as for
-  normal-form lists: 2.5 s instead of 3.3 s for 100 rows.
+  higher priority than the decision by `List.Perm`. In the benchmark, `decide +kernel` then
+  costs about as much as for normal-form lists: 2.5 s instead of 3.3 s for 100 rows.
 - **One list to show.** `#eval` display (`OutputRepr`), the `outputJson` functions of the
   tests, `ToExpr` for the counterexample replay, and the text of each choice in checked SQL
   documentation blocks show the sample of each group.
 
-The sample is not an order that SQLite promises. The claims of D7 do not read it, and its
-docstring says that a claim about the sample is a claim about the sorted rows.
+The sample is not an order that SQLite promises. The claims that the surface package defines
+(D7) do not read it. A property that a user gives to `returnsResult` can read it: such a claim
+is about the sorted rows, while `returnsLists` states a fact about each order that SQLite may
+give. In the module, the docstring of `Bag.sample` says this; in the prototype, the module
+docstring of `Bags/Sample.lean` says it.
 
 ### D5. The output of a statement
 
@@ -403,20 +410,21 @@ Capability groups of the simplification goal:
   example that WHERE commutes with UNION ALL.
 - **Claims on order need ORDER BY.** A claim that reads the order of rows of a query without
   ORDER BY has a proof for each order, or is stated on the bag.
-- **No extra kernel time.** With the decision through samples, the equality of bags of rows
-  costs the same as the equality of normal-form lists.
+- **No extra kernel time in the benchmark.** With the decision through samples, one equality
+  of two bags of rows costs about as much as the equality of normal-form lists (2% to 3% more
+  in the cited build).
 - **No judge change.** The judge already compares bags and tie groups, and the prediction does
   not change.
 
 ## Alternatives considered
 
 **Normal-form lists with explicit tie groups.** `Output.rows` could carry a list of groups, each
-in normal form. This is the canonical form as data. Its kernel cost is the same as for the
-quotient with the decision through samples, and 0.7 times the cost of the decision by
-`List.Perm`, for 100 or more rows. Each law of bags would then need a sort and
+in normal form. This is the canonical form as data. In the benchmark, its kernel cost is about
+the same as for the quotient with the decision through samples, and 0.7 times the cost of the
+decision by `List.Perm`, for 100 or more rows. Each law of bags would then need a sort and
 `normalForm_eq_iff_perm`, and the type would not stop a claim from reading the order of the
-normal form. The quotient gives these laws directly, and its sample gives the same kernel
-cost.
+normal form. The quotient gives these laws directly, and its sample gives about the same
+kernel cost in the benchmark.
 
 **Only the meaning, without enumerations.** The module could define the choices only as values
 of `ND`. The model could then not compute outputs, and the tests could not decide them.

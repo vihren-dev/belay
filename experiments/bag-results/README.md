@@ -169,9 +169,15 @@ the same imports and definitions but no proof (0.221 s).
 | 200 | 13.261 s | 9.359 s | 9.144 s |
 
 All three are quadratic in the number of rows. The decision by `List.Perm` costs about 1.4 times
-the normal form for 100 and 200 rows. The decision through samples costs the same as the normal
-form within 3%, the variation between three builds of this experiment: the quotient costs
-nothing extra in the kernel when its equality compares samples. For 10 rows the three are equal within the noise.
+the normal form for 100 and 200 rows. The decision through samples computes the normal forms of
+a list of each bag and compares them, the same work as the comparison of normal-form lists. In
+this build, it took 3% more time for 100 rows and 2% more for 200 rows. Two earlier builds of
+this experiment gave 2.384 s and 2.342 s, 9.081 s and 9.125 s
+(`/nix/store/rk6zrfnfpw5ybgnkjj7adfwhljvw1nhy-bag-results-experiments`), and
+2.375 s and 2.362 s, 9.099 s and 9.167 s
+(`/nix/store/2v81bm3h3cdm7402724r0xqb2rk0pwz9-bag-results-experiments`). So for this benchmark,
+one equality of two bags, the quotient with samples costs about as much as normal-form
+lists. For 10 rows the three are equal within the noise.
 
 ## Code lines
 

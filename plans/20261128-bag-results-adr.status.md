@@ -78,11 +78,19 @@ Relevant sources: `packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Executi
   Tests: the Nix build, `tests/docs_test.py`.
 - 2026-11-28: review 20261128T170221Z-22e0e627 (2 must, 2 should). The two musts are on the
   ADR, which this commit updates for the sample: D3 (the module takes the model's sort, and
-  slice 2 deletes the model's copy), D4 (the model decides equality of rows through samples and
-  shows samples; claims do not read them), the kernel table, D10 with 1,322 and 1,343 code
-  lines, the alternatives, and owner decisions 2 and 5. The shoulds: the sample docstrings name
-  both sorts, and the findings say which examples use which decision. Nix build
+  slice 2 deletes the model's copy), D4 (the model decides equality of bags of rows through
+  samples and shows samples; claims do not read them), the kernel table, D10 with 1,322 and
+  1,343 code lines, the alternatives, and owner decisions 2 and 5. The shoulds: the sample
+  docstrings name both sorts, and the findings say which examples use which decision. Nix build
   `/nix/store/726kbww46xp160lxvnjig4zkdvhp53xk-bag-results-experiments`: 62 audited theorems,
   probe output equal, 1,343 code lines; through samples 2.507 s and 9.359 s, normal form
   2.428 s and 9.144 s, `List.Perm` 3.276 s and 13.261 s. Tests: the Nix build,
   `tests/docs_test.py`.
+- 2026-11-28: review 20261128T170652Z-a5fb1287 (2 must, 2 should). The ADR and the findings now
+  give the measured differences between the decision through samples and normal-form lists
+  (3% and 2% in the cited build, within 2% in builds `rk6z…` and `2v81…`) and limit the
+  conclusion to the benchmark, one equality of two bags. D3 says that the evaluator's list fixes
+  the order of an enumeration unless a sort order gives the sample. D4 says that only the claims
+  of the surface package do not read the sample, and that a user property on `Bag.sample` is
+  about the sorted rows. The status entry above says "equality of bags of rows". Text only; the
+  cited Nix build does not change. Tests: `tests/docs_test.py`.
