@@ -63,3 +63,7 @@ Relevant sources: `packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Executi
   change of the tests. No input of the Nix derivation changed. Tests: `tests/docs_test.py`.
   The same commit corrects the reason why slice 1 deletes `Bags/` (it imports only the Lean core
   library) and rewraps long lines.
+- 2026-11-28: review 20261128T142317Z-0c38b356 (1 must), fixed: the commit that deletes `Bags/`
+  writes into the findings the last revision that replays all of the evidence. After four
+  rounds in a row with new musts, the owner said to fix the findings and push. No input of the
+  Nix derivation changed. Tests: `tests/docs_test.py`.

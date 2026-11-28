@@ -171,11 +171,11 @@ prototype `Bags/` has 1,225 in 17 files. The largest files are `CanonicalUnique.
 `SqliteWindow.lean` (110), `Rank.lean` (102) and `TieGroups.lean` (102).
 
 The simplification goal counts the code under `experiments/` as maintained code. Slice 1 of the
-ADR moves the prototype into the model package as the bag module and deletes `Bags/`. Slice 2
-deletes `CurrentOutputs.lean`, which a model test of P0 replaces, and keeps only the probes and
-the kernel cost in this Nix build. The findings, the probes and their script stay as the
-evidence of the ADR (ADR 0034, D8), and the findings then name the revision at which the Nix
-build replays all of the evidence.
+ADR moves the prototype into the model package as the bag module and deletes `Bags/`; the
+commit that deletes it writes here the last revision at which this Nix build replays all of the
+evidence. Slice 2 deletes `CurrentOutputs.lean`, which a model test of P0 replaces, and keeps
+only the probes and the kernel cost in this Nix build. The findings, the probes and their script
+stay as the evidence of the ADR (ADR 0034, D8).
 
 ## Limits
 

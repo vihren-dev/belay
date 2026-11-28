@@ -308,10 +308,12 @@ the project keeps no compatibility path. Each commit of the slice builds.
 
 **The experiment.** The findings, the probes and their script stay in `experiments/bag-results/`
 as the evidence of this ADR; the probes need only native SQLite. Slice 1 deletes `Bags/`,
-which becomes the module. `CurrentOutputs.lean` reads the outputs that slice 2 changes, so
-slice 2 deletes it, its model test of P0 replaces it, and the experiment's Nix build keeps only
-the probes and the kernel cost. The findings then name the
-revision at which `nix-build experiments/bag-results/default.nix` replays all of the evidence.
+which becomes the module. After this deletion, `nix-build experiments/bag-results/default.nix`
+no longer audits the theorems of the prototype. So the commit that deletes `Bags/` also writes
+into the findings the last revision at which this build replays all of the evidence.
+`CurrentOutputs.lean` reads the outputs that slice 2 changes, so slice 2 deletes it, its model
+test of P0 replaces it, and the experiment's Nix build keeps only the probes and the kernel
+cost.
 
 ### D9. What each slice shows
 
