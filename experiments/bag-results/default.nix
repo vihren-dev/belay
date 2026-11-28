@@ -1,5 +1,5 @@
 # Experiments for query results as bags: the prototype bag module, the current model outputs,
-# native SQLite probes and the kernel cost of two bag representations, against the pinned
+# native SQLite probes and the kernel cost of three decisions of bag equality, against the pinned
 # toolchain, model package and SQLite.
 { system ? builtins.currentSystem }:
 let

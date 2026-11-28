@@ -67,3 +67,12 @@ Relevant sources: `packages/belay-sqlite-model/Belay/Sqlite/Model/Shared/Executi
   writes into the findings the last revision that replays all of the evidence. After four
   rounds in a row with new musts, the owner said to fix the findings and push. No input of the
   Nix derivation changed. Tests: `tests/docs_test.py`.
+- 2026-11-28: owner request after the PR was opened: add a sample of each bag, its rows sorted,
+  to print results and decide equality. `Bags/Sample.lean` has the model's insertion sort with
+  its laws, `SortOrder`, `Bag.sample`, `sample_eq_iff` and `Bag.decEqBySample`; `kernel_cost.py`
+  measures a third case, the quotient decided through samples. Nix build
+  `/nix/store/2v81bm3h3cdm7402724r0xqb2rk0pwz9-bag-results-experiments`: 62 audited theorems
+  on the standard axioms, probe output equal, 1,343 code lines; the decision through samples
+  costs the same as normal-form lists (2.375 s and 2.362 s for 100 rows, 9.099 s and 9.167 s
+  for 200), the decision by `List.Perm` 3.274 s and 13.198 s. The findings cite this build.
+  Tests: the Nix build, `tests/docs_test.py`.

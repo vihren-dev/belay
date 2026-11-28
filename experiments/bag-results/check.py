@@ -4,8 +4,8 @@ This research check builds every Lean file of the experiment with the pinned too
 pinned model package, in import order. It fails on any warning or error, so a `sorry` fails it.
 Each `#print axioms` line names a main theorem; the check fails when a theorem depends on an
 axiom other than `propext`, `Classical.choice` and `Quot.sound`. Then it runs the native probes
-with the pinned SQLite and measures the kernel cost of two bag representations. It is not a
-production test suite. All subprocesses have fixed deadlines.
+with the pinned SQLite and measures the kernel cost of three decisions of bag equality. It is
+not a production test suite. All subprocesses have fixed deadlines.
 """
 
 from graphlib import TopologicalSorter

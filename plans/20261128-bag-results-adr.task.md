@@ -48,13 +48,17 @@ this module into the rest of the code, which replaces lists with bags in many pl
    - a canonical form of ranked rows: two ranked results permit the same lists exactly when
      their canonical forms are equal;
    - that for two nondeterministic results whose every value is one tie group (a bag),
-     equivalence is equality of the sets of permitted bags.
+     equivalence is equality of the sets of permitted bags;
+   - for a type with a total, transitive and antisymmetric order, a sample of each bag (its
+     rows sorted, owner request of 2026-11-28): two bags are equal exactly when their samples
+     are equal.
 2. **Current behavior.** An experiment shows, with the pinned model package, that the model gives
    equal outputs for a query without ORDER BY and for queries with ORDER BY, and shows with native
    SQLite that an application reads different lists from them.
 3. **Cost of the representation.** An experiment measures the kernel cost of deciding the
    equality of two bags of rows in two representations: a quotient of lists and the normal-form
-   list of the model.
+   list of the model. For the quotient, it measures two decisions: by `List.Perm`, and by the
+   equality of the samples of the two bags (owner request of 2026-11-28).
 4. **SQLite behavior for the semantic decisions.** Native SQLite probes, with their recorded
    results, show what SQLite does for: LIMIT without ORDER BY, ties of ORDER BY, the row that
    DISTINCT keeps under a collation, the order of `group_concat`, the order of a sum of REAL

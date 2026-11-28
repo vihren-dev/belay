@@ -7,7 +7,7 @@ Survey: [`docs/records/bag-results-integration-survey.md`](../../docs/records/ba
 
 This directory holds the experiments for the ADR of query results as bags: a prototype of the
 bag module, a proof of what the model gives now, native SQLite probes, and a measurement of the
-kernel cost of two representations of a bag.
+kernel cost of three ways to decide the equality of two bags.
 
 ## How to reproduce
 
@@ -20,7 +20,8 @@ It compiles each Lean file in import order and fails on a warning or an error, s
 fails it. Each `#print axioms` line names an audited theorem; the build fails when such a
 theorem depends on an axiom other than `propext`, `Classical.choice` and `Quot.sound`. Then it
 runs the probes, requires exit status 1 of `sqlite3` (probes P15 and P16 end with a runtime
-error), compares their output with `probes/probes.expected`, and measures the kernel cost. The output directory has:
+error), compares their output with `probes/probes.expected`, and measures the kernel cost. The
+output directory has:
 
 | File | Content |
 | --- | --- |
@@ -31,7 +32,7 @@ error), compares their output with `probes/probes.expected`, and measures the ke
 | `model-path.txt`, `toolchain-path.txt`, `sqlite-path.txt` | the pinned store paths |
 
 The results below are from the Nix build
-`/nix/store/zhfh5aq45zr0qrzkcr5bmcy5y6hz7cci-bag-results-experiments`.
+`/nix/store/2v81bm3h3cdm7402724r0xqb2rk0pwz9-bag-results-experiments`.
 
 ## Current outputs of the model
 
@@ -93,8 +94,9 @@ theorem has a `#print axioms` line after it; the Nix build records the axioms of
 | `Slice.lean`, `Window.lean`, `SqliteWindow.lean` | OFFSET and LIMIT on lists (`slice`) and over ranked rows (`Ranked.window`); SQLite's integer OFFSET and LIMIT (`sqliteOffset`, `sqliteLimit`) |
 | `Canonical.lean`, `CanonicalUnique.lean` | the canonical form of ranked rows (`Ranked.canon`) |
 | `Equivalence.lean` | the lists that an application can read (`observe`) and the equivalence of two results (`Equivalent`) |
+| `Sample.lean` | the insertion sort of the model (`stableSort`) and its laws; a sort order (`SortOrder`); the sample of a bag, its rows sorted (`Bag.sample`), and the decision of equality through samples (`Bag.decEqBySample`) |
 | `Select.lean` | a single-table SELECT, as an example of composition: WHERE, ORDER BY on the input rows, the window, then a total projection |
-| `Examples.lean` | `decide +kernel` and `decide` on equalities of small literal bags |
+| `Examples.lean` | `decide +kernel` and `decide` on equalities of small literal bags, with each decision; samples of bags of natural numbers |
 
 The theorems for the points of the task file:
 
@@ -132,43 +134,54 @@ The theorems for the points of the task file:
   that stays is a choice (probe P4).
 - **Aggregates.** `Bag.aggregate_of_perm`: an aggregate that gives equal results for each order
   of its rows is deterministic.
+- **Sample.** `Bag.sample_eq_iff`: for a total, transitive and antisymmetric order, two bags
+  are equal if and only if their samples are equal. `Bag.ofList_sample`: the sample is a list
+  of the bag. `SortOrder.stableSort_eq_of_perm`: permutations have the same sort, so the sample
+  is a function of the bag. The sample is a sorted list, not an order that SQLite promises.
 
-The Nix build audited 57 theorems: 53 of the prototype and 4 of `CurrentOutputs.lean`. 24
-depend on `propext`, `Classical.choice` and `Quot.sound`, 31 on `propext` and `Quot.sound`, and
-2 on no axiom (`Bag.arrange_nonempty` and `equivalent_equivalence`).
+The Nix build audited 62 theorems: 58 of the prototype and 4 of `CurrentOutputs.lean`. 24
+depend on `propext`, `Classical.choice` and `Quot.sound`, 35 on `propext` and `Quot.sound`, 1 on
+`propext` only (`stableSort_perm`), and 2 on no axiom (`Bag.arrange_nonempty` and
+`equivalent_equivalence`).
 
-## Kernel cost of two representations
+## Kernel cost of three decisions
 
 `kernel_cost.py` writes one Lean file for each case. Each file proves with `decide +kernel` that
 the rows `row 0, …, row (n-1)` and the same rows in reverse order give equal bags. The rows have
-two integer values, and the first value repeats, so the rows have ties. The two representations
-are:
+two integer values, and the first value repeats, so the rows have ties. The three cases are:
 
 - **quotient**: `Quotient (List.isSetoid (List Value))`, decided with `Quotient.decidableEq` and
   `List.decidablePerm`;
+- **quotient with samples**: the same quotient, decided by the equality of the samples of the
+  two bags: `Resolved.normalForm` of a list of the bag, through `Quotient.lift` with
+  `normalForm_eq_iff_perm`;
 - **normal form**: equality of `Resolved.normalForm` of the model, an insertion sort by
   `Resolved.compareRows`.
 
 Each time is the best wall time of three runs, minus the best wall time of a baseline file with
-the same imports and definitions but no proof (0.210 s).
+the same imports and definitions but no proof (0.219 s).
 
-| Rows | Quotient | Normal form | Quotient / normal form |
+| Rows | Quotient | With samples | Normal form |
 | ---: | ---: | ---: | ---: |
-| 10 | 0.030 s | 0.036 s | 0.8 |
-| 50 | 0.819 s | 0.634 s | 1.3 |
-| 100 | 3.297 s | 2.378 s | 1.4 |
-| 200 | 13.250 s | 9.088 s | 1.5 |
+| 10 | 0.036 s | 0.037 s | 0.036 s |
+| 50 | 0.815 s | 0.646 s | 0.649 s |
+| 100 | 3.274 s | 2.375 s | 2.362 s |
+| 200 | 13.198 s | 9.099 s | 9.167 s |
 
-Both representations are quadratic in the number of rows. The quotient costs about 1.4 to 1.5
-times the normal form for 100 and 200 rows; for 10 rows the two are equal within the noise.
+All three are quadratic in the number of rows. The decision by `List.Perm` costs about 1.4 times
+the normal form for 100 and 200 rows. The decision through samples costs the same as the normal
+form within the noise: the quotient costs nothing extra in the kernel when its equality compares
+samples. For 10 rows the three are equal within the noise.
 
 ## Code lines
 
 The Nix build counts the code lines of the Lean files with scc 3.7.0, the counter of the
 [simplification goal](../../docs/development/lean-simplification-goal.md) (`lines.json`, the sum
-of the `Code` field): 1,246 lines in 18 files. `CurrentOutputs.lean` has 21 of them, and the
-prototype `Bags/` has 1,225 in 17 files. The largest files are `CanonicalUnique.lean` (123),
-`SqliteWindow.lean` (110), `Rank.lean` (102) and `TieGroups.lean` (102).
+of the `Code` field): 1,343 lines in 19 files. `CurrentOutputs.lean` has 21 of them, and the
+prototype `Bags/` has 1,322 in 18 files. The largest files are `CanonicalUnique.lean` (123),
+`SqliteWindow.lean` (110), `Rank.lean` (102) and `TieGroups.lean` (102). `Sample.lean` has 86:
+about 58 for the sort and its laws, which the model has now, and 28 for the sort order and the
+sample.
 
 The simplification goal counts the code under `experiments/` as maintained code. Slice 1 of the
 ADR moves the prototype into the model package as the bag module and deletes `Bags/`; the
